@@ -1,8 +1,14 @@
 package main
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestLoadMail(t *testing.T) {
-	_, err := loadUserMail(1)
-	t.Errorf(err.Error())
+	result, err := loadUserMail(1)
+	if (err != nil) {
+		t.Errorf(err.Error())
+	}
+	fmt.Println(result)
 }

@@ -53,7 +53,6 @@ func loadUserMail(user int) ([]Mail, error) {
     // returns False if none OR if an error occurred
     for rows.Next() {
         // `Scan` copies data from rows to destination
-        // this scan fails the first time with seg fault
         err = rows.Scan(&mail.MessageId,
                 &mail.Date,
                 &mail.FromName,
