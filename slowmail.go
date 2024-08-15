@@ -1,9 +1,11 @@
 package main
 
 import (
-    "fmt"
     _ "github.com/mattn/go-sqlite3"
     "database/sql"
+    "net/http"
+    "html/template"
+    "log"
 )
 
 type Mail struct {
@@ -79,6 +81,25 @@ func loadUserMail(user int) ([]Mail, error) {
     return mails, nil
 }
 
+func getSignup(writer http.ResponseWriter, req *http.Request) {
+    t, err := template.New("new.go.tmpl").ParseFiles("templates/pages/account/new.go.tmpl",
+        "templates/css/styles.go.tmpl")
+    if (err != nil) {
+        panic(err)
+    }
+    err = t.Execute(writer, nil)
+    if (err != nil) {
+        panic(err)
+    }
+}
+
+func startServer() error {
+    http.HandleFunc("/account/new", getSignup)
+
+    err := http.ListenAndServe(":8080", nil)
+    return err
+}
+
 func main() {
-    fmt.Println("Doesn't do anything yet. Try running the tests.")
+    log.Fatal(startServer())
 }
