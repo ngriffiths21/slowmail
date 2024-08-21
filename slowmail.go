@@ -6,6 +6,7 @@ import (
     "net/http"
     "html/template"
     "log"
+    "crypto/sha512"
 )
 
 type Mail struct {
@@ -19,6 +20,21 @@ type Mail struct {
     Content string
 }
 
+/* serverError
+
+Fields:
+- errorType: "database" for a database IO error,
+    or "formValidation" for a form input error
+- message: description of the error
+- invalidFormField: if formValidation error, which field
+    was invalid
+*/
+type serverError struct {
+    errorType string
+    message string
+    invalidFormField string
+}
+
 func connectDb() (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", "../sqlite/mail.db")
 
@@ -27,6 +43,44 @@ func connectDb() (*sql.DB, error) {
 	}
 
     return db, nil
+}
+
+func newUser(username string, display_name string, password []byte) *serverError {
+    db, err := connectDb()
+    if err != nil {
+        return &serverError{"database", err.Error(), ""}
+    }
+    defer db.Close()
+
+    query := `
+        select username from users where username = ?;
+    `
+
+    rows, err := db.Query(query, username)
+    if err != nil {
+        return &serverError{"database", err.Error(), ""}
+    }
+    /* if rows.Next() is true, the username exists */
+    if rows.Next() {
+        rows.Close()
+        errstr := "This username is already taken."
+        return &serverError{"formValidation", errstr, "user"}
+    } else { /* if rows.Next() is false, either it failed or is empty */
+        rows.Close()
+        err = rows.Err()
+        if err != nil {
+            return &serverError{"database", err.Error(), ""}
+        }
+    }
+
+    query = `insert into users values (null, ?, ?, ?, ?);`
+
+    _, err = db.Exec(query, username, password, display_name, nil)
+    if err != nil {
+        return &serverError{"database", err.Error(), ""}
+    }
+
+    return nil
 }
 
 func loadUserMail(user int) ([]Mail, error) {
@@ -93,8 +147,32 @@ func getSignup(writer http.ResponseWriter, req *http.Request) {
     }
 }
 
+func newAccount(writer http.ResponseWriter, req *http.Request) {
+    err := req.ParseForm()
+    if (err != nil) {
+        panic(err)
+    }
+
+    username := req.PostForm.Get("username")
+    display_name := req.PostForm.Get("display_name")
+    password := sha512.Sum512([]byte(req.PostForm.Get("password")))
+
+    serveErr := newUser(username, display_name, password[:])
+    if serveErr != nil {
+        if serveErr.errorType == "database" {
+            http.Error(writer, serveErr.message, http.StatusInternalServerError)
+        } else if serveErr.errorType == "formValidation" {
+            http.Redirect(writer, req, "/account/new?error=userexists",
+                http.StatusSeeOther)
+        }
+    }
+
+    http.Redirect(writer, req, "/", http.StatusSeeOther)
+}
+
 func startServer() error {
-    http.HandleFunc("/account/new", getSignup)
+    http.HandleFunc("GET /account/new", getSignup)
+    http.HandleFunc("POST /account/new", newAccount)
 
     err := http.ListenAndServe(":8080", nil)
     return err
