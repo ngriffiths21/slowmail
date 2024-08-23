@@ -5,8 +5,10 @@ import (
     "database/sql"
     "net/http"
     "html/template"
-    "log"
     "crypto/sha512"
+    "flag"
+    "fmt"
+    "os"
 )
 
 type Mail struct {
@@ -35,8 +37,10 @@ type serverError struct {
     invalidFormField string
 }
 
+var dbPath string
+
 func connectDb() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "../sqlite/mail.db")
+	db, err := sql.Open("sqlite3", dbPath)
 
 	if err != nil {
 		return nil, err
@@ -179,5 +183,16 @@ func startServer() error {
 }
 
 func main() {
-    log.Fatal(startServer())
+    flag.StringVar(&dbPath, "db", "", "Path to the database")
+    flag.Parse()
+    if dbPath == "" {
+        fmt.Println("Error: no path to database provided. Usage:")
+        flag.PrintDefaults()
+        os.Exit(1)
+    }
+
+    err := startServer()
+    if (err != nil) {
+        panic(err)
+    }
 }
