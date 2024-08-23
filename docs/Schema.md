@@ -8,10 +8,13 @@
 - `orig_date` (unsigned int not null): Date time received in mail header, in Unix seconds
 - `date` (unsigned int not null): Date of delivery, rounded to midnight and given in Unix seconds
 - `from_head` (text not null): Combined content of from, sender, and reply-to mail headers
+    - check length(from_head) > 0
 - `from_name` (varchar(40)): Display name of primary sender
 - `from_addr` (varchar(255) not null): Email of primary sender
+    - check length(from_addr) > 0
 - `to_head` (text): Combined content of to and cc mail headers
 - `message_id` (text unique not null): Message ID from mail header
+    - check length(message_id) > 0
 - `in_reply_to` (text): Content of in-reply-to header, with message IDs of parent message(s)
 - `subject` (text): Content of subject header
 - `content` (text): Mail body
@@ -22,8 +25,10 @@
 
 - `user_id` (integer primary key): Slow Mail user ID
 - `username` (varchar(40) unique not null): Email username
+    - check length(username) > 0
 - `password` (binary(64) not null): Hash of password. The hash of empty data is also considered invalid.
 - `display_name` (varchar(40) not null): Display name
+    - check length(display_name) > 0
 - `recovery_addr` (varchar(255)): Recovery email (optional)
 
 ### Data validation
