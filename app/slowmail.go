@@ -9,19 +9,17 @@ import (
     "os"
 )
 
-/* serverError
+/* dbError
 
 Fields:
-- errorType: "database" for a database IO error,
-    or "formValidation" for a form input error
+- errorType:
+    - "database" for a database IO error
+    - "userExists" for a duplicate username
 - message: description of the error
-- invalidFormField: if formValidation error, which field
-    was invalid
 */
-type serverError struct {
+type dbError struct {
     errorType string
     message string
-    invalidFormField string
 }
 
 func getSignup(writer http.ResponseWriter, req *http.Request) {
@@ -46,11 +44,11 @@ func newAccount(writer http.ResponseWriter, req *http.Request) {
     display_name := req.PostForm.Get("display_name")
     password := sha512.Sum512([]byte(req.PostForm.Get("password")))
 
-    serveErr := newUser(username, display_name, password[:])
-    if serveErr != nil {
-        if serveErr.errorType == "database" {
-            http.Error(writer, serveErr.message, http.StatusInternalServerError)
-        } else if serveErr.errorType == "formValidation" {
+    dbErr := newUser(username, display_name, password[:])
+    if dbErr != nil {
+        if dbErr.errorType == "database" {
+            http.Error(writer, dbErr.message, http.StatusInternalServerError)
+        } else if dbErr.errorType == "userExists" {
             http.Redirect(writer, req, "/account/new?error=userexists",
                 http.StatusSeeOther)
         }

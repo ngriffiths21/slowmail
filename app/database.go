@@ -2,6 +2,7 @@ package main
 
 import (
     "database/sql"
+    _ "github.com/mattn/go-sqlite3"
 )
 
 type Mail struct {
@@ -27,39 +28,21 @@ func connectDb() (*sql.DB, error) {
     return db, nil
 }
 
-func newUser(username string, display_name string, password []byte) *serverError {
+func newUser(username string, display_name string, password []byte) *dbError {
     db, err := connectDb()
     if err != nil {
-        return &serverError{"database", err.Error(), ""}
+        return &dbError{"database", err.Error()}
     }
     defer db.Close()
 
-    query := `
-        select username from users where username = ?;
-    `
-
-    rows, err := db.Query(query, username)
-    if err != nil {
-        return &serverError{"database", err.Error(), ""}
-    }
-    /* if rows.Next() is true, the username exists */
-    if rows.Next() {
-        rows.Close()
-        errstr := "This username is already taken."
-        return &serverError{"formValidation", errstr, "user"}
-    } else { /* if rows.Next() is false, either it failed or is empty */
-        rows.Close()
-        err = rows.Err()
-        if err != nil {
-            return &serverError{"database", err.Error(), ""}
-        }
-    }
-
-    query = `insert into users values (null, ?, ?, ?, ?);`
+    query := `insert into users values (null, ?, ?, ?, ?);`
 
     _, err = db.Exec(query, username, password, display_name, nil)
     if err != nil {
-        return &serverError{"database", err.Error(), ""}
+        if err.Error() == "UNIQUE constraint failed: users.username" {
+            return &dbError{"userExists", err.Error()}
+        }
+        return &dbError{"database", err.Error()}
     }
 
     return nil

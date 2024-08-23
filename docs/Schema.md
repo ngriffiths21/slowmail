@@ -1,25 +1,39 @@
 # Database Schema
 
-### Mail table
+### Tables
 
-- `user_id` (integer): Slow Mail user ID
-- `orig_date` (unsigned int): Date time received in mail header, in Unix seconds
-- `date` (unsigned int): Date of delivery, rounded to midnight and given in Unix seconds
-- `from_head` (text): Combined content of from, sender, and reply-to mail headers
+##### Table `mail`
+
+- `user_id` (integer not null): Slow Mail user ID
+- `orig_date` (unsigned int not null): Date time received in mail header, in Unix seconds
+- `date` (unsigned int not null): Date of delivery, rounded to midnight and given in Unix seconds
+- `from_head` (text not null): Combined content of from, sender, and reply-to mail headers
 - `from_name` (varchar(40)): Display name of primary sender
-- `from_addr` (varchar(255)): Email of primary sender
+- `from_addr` (varchar(255) not null): Email of primary sender
 - `to_head` (text): Combined content of to and cc mail headers
-- `message_id` (text): Message ID from mail header
+- `message_id` (text unique not null): Message ID from mail header
 - `in_reply_to` (text): Content of in-reply-to header, with message IDs of parent message(s)
 - `subject` (text): Content of subject header
 - `content` (text): Mail body
-- `multifrom` (tinyint): Boolean flag for more than one from address
-- `multito` (tinyint): Boolean flag for more than one to address
+- `multifrom` (tinyint not null): Boolean flag for more than one from address
+- `multito` (tinyint not null): Boolean flag for more than one to address
 
-### User table
+##### Table `users`
 
 - `user_id` (integer primary key): Slow Mail user ID
-- `username` (varchar(40)): Email username
-- `password` (binary(64)): Hash of password
-- `display_name` (varchar(40)): Display name
+- `username` (varchar(40) unique not null): Email username
+- `password` (binary(64) not null): Hash of password. The hash of empty data is also considered invalid.
+- `display_name` (varchar(40) not null): Display name
 - `recovery_addr` (varchar(255)): Recovery email (optional)
+
+### Data validation
+
+The following data constraints are the responsibility of the client to enforce (implemented using HTML attributes, or when necessary, client-side JavaSript). If invalid data reaches the database driver, this is considered an application bug, not a user error.
+
+- Data types (valid strings and numeric values)
+- Minimums and maximums for string lengths and numeric values
+- String patterns (e.g., a valid email, a strong password)
+
+The following data constraints are the responsibility of the server to enforce, and when necessary, to handle gracefully by prompting the user for a different value:
+
+- Unique fields (in particular, usernames)
