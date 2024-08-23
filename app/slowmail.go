@@ -22,16 +22,24 @@ type dbError struct {
     message string
 }
 
-func getSignup(writer http.ResponseWriter, req *http.Request) {
+type signupData struct {
+    UserExists bool
+}
+
+func renderSignup(writer http.ResponseWriter, sdata signupData) {
     t, err := template.New("new.go.tmpl").ParseFiles("templates/pages/account/new.go.tmpl",
         "templates/css/styles.go.tmpl")
     if (err != nil) {
         panic(err)
     }
-    err = t.Execute(writer, nil)
+    err = t.Execute(writer, sdata)
     if (err != nil) {
         panic(err)
     }
+}
+
+func getSignup(writer http.ResponseWriter, req *http.Request) {
+    renderSignup(writer, signupData{false})
 }
 
 func newAccount(writer http.ResponseWriter, req *http.Request) {
@@ -49,8 +57,7 @@ func newAccount(writer http.ResponseWriter, req *http.Request) {
         if dbErr.errorType == "database" {
             http.Error(writer, dbErr.message, http.StatusInternalServerError)
         } else if dbErr.errorType == "userExists" {
-            http.Redirect(writer, req, "/account/new?error=userexists",
-                http.StatusSeeOther)
+            renderSignup(writer, signupData{true})
         }
     }
 
