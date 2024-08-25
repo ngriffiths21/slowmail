@@ -9,19 +9,6 @@ import (
     "os"
 )
 
-/* dbError
-
-Fields:
-- errorType:
-    - "database" for a database IO error
-    - "userExists" for a duplicate username
-- message: description of the error
-*/
-type dbError struct {
-    errorType string
-    message string
-}
-
 type signupData struct {
     UserExists bool
 }
@@ -52,16 +39,14 @@ func newAccount(writer http.ResponseWriter, req *http.Request) {
     display_name := req.PostForm.Get("display_name")
     password := sha512.Sum512([]byte(req.PostForm.Get("password")))
 
-    dbErr := newUser(username, display_name, password[:])
+    dbErr, userExists := newUser(username, display_name, password[:])
     if dbErr != nil {
-        if dbErr.errorType == "database" {
-            http.Error(writer, dbErr.message, http.StatusInternalServerError)
-        } else if dbErr.errorType == "userExists" {
-            renderSignup(writer, signupData{true})
-        }
+        http.Error(writer, dbErr.Error(), http.StatusInternalServerError)
+    } else if userExists {
+        renderSignup(writer, signupData{true})
+    } else {
+        http.Redirect(writer, req, "/", http.StatusSeeOther)
     }
-
-    http.Redirect(writer, req, "/", http.StatusSeeOther)
 }
 
 func startServer() error {
@@ -73,6 +58,7 @@ func startServer() error {
 }
 
 func main() {
+    var dbPath string
     flag.StringVar(&dbPath, "db", "", "Path to the database")
     flag.Parse()
     if dbPath == "" {
@@ -81,7 +67,13 @@ func main() {
         os.Exit(1)
     }
 
-    err := startServer()
+    err := connectDb(dbPath)
+    if (err != nil) {
+        panic(err)
+    }
+    defer db.Close()
+
+    err = startServer()
     if (err != nil) {
         panic(err)
     }

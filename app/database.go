@@ -16,45 +16,36 @@ type Mail struct {
     Content string
 }
 
-var dbPath string
+var db *sql.DB
 
-func connectDb() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", dbPath)
-
-	if err != nil {
-		return nil, err
-	}
-
-    return db, nil
+func connectDb(dbPath string) error {
+    var err error
+	db, err = sql.Open("sqlite3", dbPath)
+    return err
 }
 
-func newUser(username string, display_name string, password []byte) *dbError {
-    db, err := connectDb()
-    if err != nil {
-        return &dbError{"database", err.Error()}
-    }
-    defer db.Close()
+/* newUser: insert a user and return errors
 
+The first return value is an `error`
+originating from the database driver, and the second return value is a
+boolean flag that the user exists. It is set to true if user creation failed
+because the username already exists, false otherwise.
+*/
+func newUser(username string, display_name string, password []byte) (error, bool) {
     query := `insert into users values (null, ?, ?, ?, ?);`
-
-    _, err = db.Exec(query, username, password, display_name, nil)
-    if err != nil {
-        if err.Error() == "UNIQUE constraint failed: users.username" {
-            return &dbError{"userExists", err.Error()}
-        }
-        return &dbError{"database", err.Error()}
+    _, err := db.Exec(query, username, password, display_name, nil)
+    if err != nil && err.Error() == "UNIQUE constraint failed: users.username" {
+        return nil, true
     }
-
-    return nil
+    return err, false
 }
 
-func loadUserMail(user int) ([]Mail, error) {
-    db, err := connectDb()
-    if err != nil {
-        return nil, err
-    }
-	defer db.Close()
+/* loadUserMail: load all mail for a user
 
+This function should not be used as is. It should be updated
+to select a mailbox, not all mail.
+*/
+func loadUserMail(user int) ([]Mail, error) {
     query := `
         select message_id, date, from_name, from_addr, multifrom,
             multito, subject, content
@@ -93,9 +84,5 @@ func loadUserMail(user int) ([]Mail, error) {
 
     // check if an error happened during `Next()`
     err = rows.Err()
-    if err != nil {
-        return nil, err
-    }
-
-    return mails, nil
+    return mails, err
 }
