@@ -5,7 +5,7 @@ import (
     "html/template"
     "crypto/sha512"
     "flag"
-    "fmt"
+    "log"
     "os"
 )
 
@@ -13,15 +13,21 @@ type signupData struct {
     UserExists bool
 }
 
+func internalError(writer http.ResponseWriter, err error) {
+    log.Println(err.Error())
+    http.Error(writer, err.Error(), http.StatusInternalServerError)
+}
+
 func renderSignup(writer http.ResponseWriter, sdata signupData) {
     t, err := template.New("new.go.tmpl").ParseFiles("templates/pages/account/new.go.tmpl",
         "templates/css/styles.go.tmpl")
+
     if (err != nil) {
-        panic(err)
+        internalError(writer, err)
     }
     err = t.Execute(writer, sdata)
     if (err != nil) {
-        panic(err)
+        internalError(writer, err)
     }
 }
 
@@ -32,7 +38,7 @@ func getSignup(writer http.ResponseWriter, req *http.Request) {
 func newAccount(writer http.ResponseWriter, req *http.Request) {
     err := req.ParseForm()
     if (err != nil) {
-        panic(err)
+        internalError(writer, err)
     }
 
     username := req.PostForm.Get("username")
@@ -41,7 +47,7 @@ func newAccount(writer http.ResponseWriter, req *http.Request) {
 
     dbErr, userExists := newUser(username, display_name, password[:])
     if dbErr != nil {
-        http.Error(writer, dbErr.Error(), http.StatusInternalServerError)
+        internalError(writer, dbErr)
     } else if userExists {
         renderSignup(writer, signupData{true})
     } else {
@@ -62,19 +68,19 @@ func main() {
     flag.StringVar(&dbPath, "db", "", "Path to the database")
     flag.Parse()
     if dbPath == "" {
-        fmt.Println("Error: no path to database provided. Usage:")
-        flag.PrintDefaults()
+        log.Println("Error: no path to database provided.")
+        flag.Usage()
         os.Exit(1)
     }
 
     err := connectDb(dbPath)
     if (err != nil) {
-        panic(err)
+        log.Panic(err)
     }
     defer db.Close()
 
     err = startServer()
     if (err != nil) {
-        panic(err)
+        log.Panic(err)
     }
 }
