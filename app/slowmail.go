@@ -4,10 +4,14 @@ import (
     "net/http"
     "html/template"
     "crypto/sha512"
+    "crypto/rand"
+    "encoding/base64"
     "flag"
     "log"
     "os"
     "strings"
+    "errors"
+    "time"
 )
 
 // data to pass to the signup page template
@@ -70,14 +74,47 @@ func postSignup(writer http.ResponseWriter, req *http.Request) {
     display_name := req.PostForm.Get("display_name")
     password := sha512.Sum512([]byte(req.PostForm.Get("password")))
 
-    dbErr, userExists := newUser(username, display_name, password[:])
+    userid, dbErr, userExists := newUser(username, display_name, password[:])
     if dbErr != nil {
         internalError(writer, dbErr)
         return
     } else if userExists {
         renderPage(writer, req, signupData{true})
         return
+    } else if userid == -1 {
+        internalError(writer, errors.New("No userid was returned by the database."))
     }
+    setAuthCookie(writer, req, userid)
+}
+
+func setAuthCookie(writer http.ResponseWriter, req *http.Request, user int) {
+    start := time.Now()
+    d, err := time.ParseDuration("24h")
+    if err != nil {
+        internalError(writer, err)
+        return
+    }
+    expire := start.Add(d)
+    
+    sessionNotStarted := true
+    // if newSession fails because of duplicate session id, keep trying
+    var sessionId string
+    randBytes := make([]byte, 8)
+    for sessionNotStarted {
+        _, err := rand.Read(randBytes)
+        if err != nil {
+            internalError(writer, err)
+            return
+        }
+        sessionId = base64.RawStdEncoding.EncodeToString(randBytes)
+
+        err, sessionNotStarted = newSession(sessionId, user, start, req.RemoteAddr, expire)
+        if err != nil {
+            internalError(writer, err)
+            return
+        }
+    }
+    http.SetCookie(writer, &http.Cookie{Name: "sessionid", Value: sessionId, Path: "/", Expires: expire})
     http.Redirect(writer, req, "/", http.StatusSeeOther)
 }
 

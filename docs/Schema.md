@@ -33,7 +33,7 @@
 
 ##### Table `sessions`
 
-- `session_id` (integer primary key): Session ID
+- `session_id` (varchar(11) unique not null): Session ID, 8 bytes in base64, which should be (securely) randomly generated
 - `user_id` (integer not null): Slow Mail user ID
 - `start_date` (unsigned int not null): Date time the session started, in UNIX seconds
 - `ip` (varchar(40) not null): IP address of client
