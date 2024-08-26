@@ -31,6 +31,14 @@
     - check length(display_name) > 0
 - `recovery_addr` (varchar(255)): Recovery email (optional)
 
+##### Table `sessions`
+
+- `session_id` (integer primary key): Session ID
+- `user_id` (integer not null): Slow Mail user ID
+- `start_date` (unsigned int not null): Date time the session started, in UNIX seconds
+- `ip` (varchar(40) not null): IP address of client
+- `expiration` (unsigned int not null): Date time the session expires, in UNIX seconds
+
 ### Data validation
 
 The following data constraints are the responsibility of the client to enforce (implemented using HTML attributes, or when necessary, client-side JavaSript). If invalid data reaches the database driver, this is considered an application bug, not a user error.
