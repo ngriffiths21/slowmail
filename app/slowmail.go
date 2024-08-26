@@ -63,6 +63,7 @@ func postSignup(writer http.ResponseWriter, req *http.Request) {
     err := req.ParseForm()
     if (err != nil) {
         internalError(writer, err)
+        return
     }
 
     username := req.PostForm.Get("username")
@@ -72,11 +73,12 @@ func postSignup(writer http.ResponseWriter, req *http.Request) {
     dbErr, userExists := newUser(username, display_name, password[:])
     if dbErr != nil {
         internalError(writer, dbErr)
+        return
     } else if userExists {
         renderPage(writer, req, signupData{true})
-    } else {
-        http.Redirect(writer, req, "/", http.StatusSeeOther)
+        return
     }
+    http.Redirect(writer, req, "/", http.StatusSeeOther)
 }
 
 func startServer() error {
