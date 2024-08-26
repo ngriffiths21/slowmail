@@ -4,9 +4,9 @@
 
 - `/`: Redirect to `/mail/folder/inbox`
 - `/mail/folder/inbox`: List and previews of received mail
-- `/mail/{id}`: Read a single mail
-- `/mail/folder/draft/`: List and previews of drafts
-- `/mail/{id}/draft`: Edit a draft
+- `/mail/piece/{id}/read`: Read a single mail
+- `/mail/folder/drafts/`: List and previews of drafts
+- `/mail/piece/{id}/edit`: Edit a draft
 - `/signup`: Create a new account
 - `/login`: Log in (with link to sign up). All routes redirect here if auth fails.
 - `/account`: View and update account settings
@@ -15,7 +15,7 @@
 
 1. (`/mail/...`, `/account`) Check authentication
 2. Load data
-    - (`/mail/{id}/...`) Single mail
+    - (`/mail/piece/...`) Single mail
     - (`/mail/folder/...`) List of mail
     - (`/account`) Account info
 3. Render template and respond
@@ -24,8 +24,8 @@
 
 - `/signup`: Create new account
 - `/login`: Log in
-- `/mail/{id}/send`: Send a mail
-- `/mail/new`: Create a new mail (creates and redirects to `/mail/{id}/draft`)
+- `/mail/piece/{id}`: Send a mail
+- `/mail/new`: Create a new mail (creates and redirects to `/mail/piece/{id}/edit`)
 
 ##### POST handlers
 
@@ -34,13 +34,13 @@
     - (`/signup`) Create account
     - (`/login`) Log in
     - (`/mail/...`) Create mail
-    - (`/mail/{id}/send`) Delete old draft
+    - (`/mail/piece/{id}`) Delete old draft
 3. (`/signup`, `/login`) Set auth cookie
 4. Redirect
 
 ### PUT routes
 
-- `/mail/{id}/draft`: Save a draft
+- `/mail/piece/{id}`: Save a draft
 - `/account/`: Save account info
 
 ##### PUT handlers
