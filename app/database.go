@@ -4,6 +4,7 @@ import (
     "database/sql"
     _ "github.com/mattn/go-sqlite3"
     "time"
+    "errors"
 )
 
 type Mail struct {
@@ -114,4 +115,37 @@ func loadUserMail(user int) ([]Mail, error) {
     // check if an error happened during `Next()`
     err = rows.Err()
     return mails, err
+}
+
+/* loadUser
+
+Load a user record. Returns an error if a duplicate is found.
+*/
+func loadUser(username string) (*user, error) {
+    query := `
+        select user_id, username, password, display_name, coalesce(recovery_addr, "")
+        from users
+        where username = ?;
+    `
+    var user user
+
+    rows, err := db.Query(query, username)
+
+    // need to call Next() before scanning result
+    if !rows.Next() {
+        rows.Close()
+        err = rows.Err()
+        return nil, err
+    }
+
+    // rows.Next found a first row
+    err = rows.Scan(&user.userId, &user.username, &user.password,
+        &user.displayName, &user.recoveryAddr)
+
+    // double check there isn't a second result
+    if rows.Next() {
+        return nil, errors.New("The database found more than one user with this username.")
+    }
+
+    return &user, err
 }

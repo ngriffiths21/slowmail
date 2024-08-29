@@ -19,6 +19,22 @@ type signupData struct {
     UserExists bool
 }
 
+// data to pass to the login page template
+type loginData struct {
+    UserWrong bool
+    PassWrong bool
+    Username string
+}
+
+// user record
+type user struct {
+    userId int
+    username string
+    password []byte
+    displayName string
+    recoveryAddr string
+}
+
 // parsed templates, will be initialized on app init
 var temps *template.Template
 
@@ -56,6 +72,10 @@ func getSignup(writer http.ResponseWriter, req *http.Request) {
     renderPage(writer, req, signupData{false})
 }
 
+func getLogin(writer http.ResponseWriter, req *http.Request) {
+    renderPage(writer, req, loginData{false, false, ""})
+}
+
 /* postSignup
 
 Parses a signup form and inserts a new user to the database.
@@ -65,7 +85,7 @@ responsibility).
 */
 func postSignup(writer http.ResponseWriter, req *http.Request) {
     err := req.ParseForm()
-    if (err != nil) {
+    if err != nil {
         internalError(writer, err)
         return
     }
@@ -86,6 +106,34 @@ func postSignup(writer http.ResponseWriter, req *http.Request) {
         return
     }
     startSession(writer, req, userid)
+}
+
+/* postLogin
+
+This route handles missing username and missing passwords as user errors.
+All others are internal errors.
+*/
+func postLogin(writer http.ResponseWriter, req *http.Request) {
+    err := req.ParseForm()
+    if err != nil {
+        internalError(writer, err)
+        return
+    }
+
+    username := req.PostForm.Get("username")
+    password := sha512.Sum512([]byte(req.PostForm.Get("password")))
+
+    user, dbErr := loadUser(username)
+    if dbErr != nil {
+        internalError(writer, dbErr)
+        return
+    } else if user == nil {
+        renderPage(writer, req, loginData{true, false, username})
+        return
+    } else if password != [64]byte(user.password) {
+        renderPage(writer, req, loginData{false, true, username})
+    }
+    startSession(writer, req, user.userId)
 }
 
 /* startSession
@@ -126,6 +174,8 @@ func startSession(writer http.ResponseWriter, req *http.Request, user int) {
 func startServer() error {
     http.HandleFunc("GET /signup", getSignup)
     http.HandleFunc("POST /signup", postSignup)
+    http.HandleFunc("GET /login", getLogin)
+    http.HandleFunc("POST /login", postLogin)
 
     err := http.ListenAndServe(":8080", nil)
     return err
