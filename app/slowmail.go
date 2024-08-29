@@ -83,11 +83,16 @@ func postSignup(writer http.ResponseWriter, req *http.Request) {
         return
     } else if userid == -1 {
         internalError(writer, errors.New("No userid was returned by the database."))
+        return
     }
-    setAuthCookie(writer, req, userid)
+    startSession(writer, req, userid)
 }
 
-func setAuthCookie(writer http.ResponseWriter, req *http.Request, user int) {
+/* startSession
+
+Create a new session, save it to the database, set auth cookie, and redirect.
+*/
+func startSession(writer http.ResponseWriter, req *http.Request, user int) {
     start := time.Now()
     d, err := time.ParseDuration("24h")
     if err != nil {
@@ -119,8 +124,8 @@ func setAuthCookie(writer http.ResponseWriter, req *http.Request, user int) {
 }
 
 func startServer() error {
-    http.HandleFunc("GET /account/new", getSignup)
-    http.HandleFunc("POST /account/new", postSignup)
+    http.HandleFunc("GET /signup", getSignup)
+    http.HandleFunc("POST /signup", postSignup)
 
     err := http.ListenAndServe(":8080", nil)
     return err
