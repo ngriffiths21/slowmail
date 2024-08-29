@@ -142,8 +142,7 @@ func main() {
     }
 
     var err error
-    temps, err = template.ParseFiles("templates/pages/account/new.go.tmpl",
-        "templates/css/styles.go.tmpl")
+    temps, err = template.ParseGlob("templates/*.go.tmpl")
     if (err != nil) {
         log.Panic(err)
     }
