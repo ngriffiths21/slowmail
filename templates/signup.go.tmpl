@@ -4,18 +4,22 @@
 {{template "head.go.tmpl" "Signup"}}
 </head>
 <body>
-    <form action="/signup" method="post">
-        <h1>Sign Up</h1>
-        {{if .UserExists}}
-        <p>That username already exists, please choose a new one.</p>
-        {{end}}
-        <label for="username">Choose a username:</label>
-        <input type="text" id="username" name="username" maxlength="40" required><br><br>
-        <label for="display_name">Display name:</label>
-        <input type="text" id="display_name" name="display_name"  maxlength="40" required><br><br>
-        <label for="password">Choose a password:</label>
-        <input type="password" id="password" name="password" minlength="5" required><br><br>
-        <button type="submit">Submit</button>
-    </form>
+    <div class="sign-in-form">
+        <form action="/signup" method="post">
+            <h1>Sign Up</h1>
+            {{if .UserExists}}
+            <p>That username already exists, please choose a new one.</p>
+            {{end}}
+            <label for="username">Choose a username:</label>
+            <input type="text" id="username" name="username" maxlength="40" required><br>
+            <label for="display_name">Display name:</label>
+            <input type="text" id="display_name" name="display_name"  maxlength="40" required><br>
+            <label for="password">Choose a password:</label>
+            <input type="password" id="password" name="password" minlength="5" required><br>
+            <button type="submit">Submit</button>
+        </form>
+        <br>
+        <a href="/login">Login</a>
+    </div>
 </body>
 </html>
