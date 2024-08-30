@@ -1,19 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <title>Login | Slow Mail</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        {{template "styles"}}
-
-        form {
-            width: 30rem;
-            margin-left: auto;
-            margin-right: auto;
-        }
-    </style>
-</head>
+{{template "head.go.tmpl" "Login"}}
 <body>
     <form action="/login" method="post">
         <h1>Login</h1>
