@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+{{template "head.go.tmpl" "Login"}}
+<body>
+    {{template "nav.go.tmpl"}}
+    <main>
+        <h1>Inbox</h1>
+
+        <h2 class="table-title">{{.Date}}</h2>
+        <table>
+            <tr>
+                <th class="from-col">From</th>
+                <th class="subject-col">Subject</th>
+                <th class="preview-col">Preview</th>
+            </tr>
+            {{range .Mails}}
+            <tr>
+                <td><a class="cell" href="/mail/piece/{{.MailId}}">{{.FromName}}</a></td>
+                <td class="cell">{{.Subject}}</td>
+                <td class="cell">{{.Preview}}</td>
+            </tr>
+            {{end}}
+        </table>
+    </main>
+</body>
+</html>

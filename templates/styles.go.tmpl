@@ -18,21 +18,70 @@ h1 {
     margin-bottom: 20px;
 }
 
-input, button, textarea, select {
-  font: inherit;
+.nav {
+    margin-right: 0.5rem;
 }
 
+/* FORMS */
+
 input, button, textarea, select {
+    font: inherit;
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
 }
 
+/* put labels above form inputs, instead of to the left */
 label {
     display: block;
 }
 
-div.sign-in-form {
+/* small form in center of page, for login/signup pages */
+.sign-in-form {
     max-width: 30rem;
     margin-left: auto;
     margin-right: auto;
+}
+
+/* TABLES */
+
+.table-title {
+    font-size: 1.15rem;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+table {
+    width: 100%;
+    table-layout: fixed;
+    white-space: nowrap;
+    overflow-x: scroll;
+}
+
+th {
+    text-align: left;
+}
+
+/* table cells */
+
+a.cell {
+    display: block;
+}
+
+.cell {
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+/* mail table sizing */
+
+.from-col {
+    width: 10rem;
+}
+
+.subject-col {
+    width: 14rem;
+}
+
+.preview-col {
+    width: 14rem;
 }

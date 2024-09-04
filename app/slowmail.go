@@ -26,13 +26,10 @@ type loginData struct {
     Username string
 }
 
-// user record
-type user struct {
-    userId int
-    username string
-    password []byte
-    displayName string
-    recoveryAddr string
+// data to pass to the mailbox templates
+type mailboxData struct {
+    Date string
+    Mails []Mail
 }
 
 // parsed templates, will be initialized on app init
@@ -91,21 +88,24 @@ func postSignup(writer http.ResponseWriter, req *http.Request) {
     }
 
     username := req.PostForm.Get("username")
-    display_name := req.PostForm.Get("display_name")
+    displayName := req.PostForm.Get("display_name")
     password := sha512.Sum512([]byte(req.PostForm.Get("password")))
 
-    userid, dbErr, userExists := newUser(username, display_name, password[:])
+    userid, dbErr := newUser(User{Username: username, DisplayName: displayName, Password: password[:]})
+    
+    if dbErr == ErrNotUnique {
+        renderPage(writer, req, signupData{true})
+        return
+    }
     if dbErr != nil {
         internalError(writer, dbErr)
         return
-    } else if userExists {
-        renderPage(writer, req, signupData{true})
-        return
-    } else if userid == -1 {
+    }
+    if userid == nil {
         internalError(writer, errors.New("No userid was returned by the database."))
         return
     }
-    startSession(writer, req, userid)
+    startSession(writer, req, *userid)
 }
 
 /* postLogin
@@ -124,16 +124,19 @@ func postLogin(writer http.ResponseWriter, req *http.Request) {
     password := sha512.Sum512([]byte(req.PostForm.Get("password")))
 
     user, dbErr := loadUser(username)
+    if dbErr == ErrNotFound {
+        renderPage(writer, req, loginData{true, false, username})
+        return
+    }
     if dbErr != nil {
         internalError(writer, dbErr)
         return
-    } else if user == nil {
-        renderPage(writer, req, loginData{true, false, username})
-        return
-    } else if password != [64]byte(user.password) {
-        renderPage(writer, req, loginData{false, true, username})
     }
-    startSession(writer, req, user.userId)
+    if password != [64]byte(user.Password) {
+        renderPage(writer, req, loginData{false, true, username})
+        return
+    }
+    startSession(writer, req, user.UserId)
 }
 
 /* startSession
@@ -149,11 +152,10 @@ func startSession(writer http.ResponseWriter, req *http.Request, user int) {
     }
     expire := start.Add(d)
     
-    sessionNotStarted := true
     // if newSession fails because of duplicate session id, keep trying
     var sessionId string
     randBytes := make([]byte, 8)
-    for sessionNotStarted {
+    for {
         _, err := rand.Read(randBytes)
         if err != nil {
             internalError(writer, err)
@@ -161,8 +163,10 @@ func startSession(writer http.ResponseWriter, req *http.Request, user int) {
         }
         sessionId = base64.RawStdEncoding.EncodeToString(randBytes)
 
-        err, sessionNotStarted = newSession(sessionId, user, start, req.RemoteAddr, expire)
-        if err != nil {
+        err = newSession(Session{sessionId, user, start.Unix(), req.RemoteAddr, expire.Unix()})
+        if err == nil {
+            break
+        } else if err != ErrNotUnique {
             internalError(writer, err)
             return
         }
@@ -171,11 +175,53 @@ func startSession(writer http.ResponseWriter, req *http.Request, user int) {
     http.Redirect(writer, req, "/", http.StatusSeeOther)
 }
 
+/* makeAuthedHandler
+
+Returns a handler that checks session authentication and then calls the next handler.
+If there is no session cookie, or the session cookie has expired, then it redirects
+to the login page.
+
+*/
+func makeAuthedHandler(callback func(http.ResponseWriter, *http.Request, int)) func(http.ResponseWriter, *http.Request) {
+    return func(writer http.ResponseWriter, req *http.Request) {
+        sessionCookie, err := req.Cookie("sessionid")
+        if err == http.ErrNoCookie {
+            http.Redirect(writer, req, "/login", http.StatusSeeOther)
+            return
+        }
+
+        var session *Session
+        session, err = loadSession(sessionCookie.Value)
+        if err != nil && err != ErrNotFound {
+            internalError(writer, err)
+            return
+        }
+        if err == ErrNotFound || session.Expiration < time.Now().Unix() {
+            http.Redirect(writer, req, "/login", http.StatusSeeOther)
+            return
+        }
+        callback(writer, req, session.UserId)
+    }
+}
+
+/* getInbox: display inbox */
+func getInbox(writer http.ResponseWriter, req *http.Request, user int) {
+    mails, err := loadMailbox(user, "inbox")
+    if err != nil {
+        internalError(writer, err)
+        return
+    }
+
+    renderPage(writer, req, mailboxData{Date: time.Now().Format("Monday, Jan _2"), Mails: mails})
+}
+
 func startServer() error {
     http.HandleFunc("GET /signup", getSignup)
     http.HandleFunc("POST /signup", postSignup)
     http.HandleFunc("GET /login", getLogin)
     http.HandleFunc("POST /login", postLogin)
+    http.HandleFunc("GET /mail/folder/inbox", makeAuthedHandler(getInbox))
+    http.Handle("GET /{$}", http.RedirectHandler("/mail/folder/inbox", http.StatusSeeOther))
 
     err := http.ListenAndServe(":8080", nil)
     return err
