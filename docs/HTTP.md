@@ -3,7 +3,8 @@
 ### GET routes
 
 - `/`: Redirect to `/mail/folder/inbox`
-- `/mail/folder/inbox`: List and previews of received mail
+- `/mail/folder/inbox`: List and previews of unopened mail
+- `/mail/folder/archive`: List and previews of all received mail
 - `/mail/piece/{id}/read`: Read a single mail
 - `/mail/folder/drafts/`: List and previews of drafts
 - `/mail/piece/{id}/edit`: Edit a draft
