@@ -5,9 +5,9 @@
 - `/`: Redirect to `/mail/folder/inbox`
 - `/mail/folder/inbox`: List and previews of unopened mail
 - `/mail/folder/archive`: List and previews of all received mail
-- `/mail/piece/{id}/read`: Read a single mail
+- `/mail/conv/{id}/read`: Read a conversation
 - `/mail/folder/drafts/`: List and previews of drafts
-- `/mail/piece/{id}/edit`: Edit a draft
+- `/mail/compose`: Compose page
 - `/signup`: Create a new account
 - `/login`: Log in (with link to sign up). All routes redirect here if auth fails.
 - `/account`: View and update account settings
@@ -26,7 +26,7 @@
 - `/signup`: Create new account
 - `/login`: Log in
 - `/mail/piece/{id}`: Send a mail
-- `/mail/new`: Create a new mail (creates and redirects to `/mail/piece/{id}/edit`)
+- `/mail/compose`: Save a newly composed draft
 
 ##### POST handlers
 
