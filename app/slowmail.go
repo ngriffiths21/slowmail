@@ -246,12 +246,17 @@ func getInbox(writer http.ResponseWriter, req *http.Request, session SessionUser
         PagePrev: page - 1, PageNext: next})
 }
 
+func getCompose(writer http.ResponseWriter, req *http.Request, session SessionUser) {
+    renderPage(writer, req, composeData{Username: session.Username})
+}
+
 func startServer() error {
     http.HandleFunc("GET /signup", getSignup)
     http.HandleFunc("POST /signup", postSignup)
     http.HandleFunc("GET /login", getLogin)
     http.HandleFunc("POST /login", postLogin)
     http.HandleFunc("GET /mail/folder/inbox", makeAuthedHandler(getInbox))
+    http.HandleFunc("GET /mail/compose", makeAuthedHandler(getCompose))
     http.Handle("GET /{$}", http.RedirectHandler("/mail/folder/inbox", http.StatusSeeOther))
 
     err := http.ListenAndServe(":8080", nil)

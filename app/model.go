@@ -28,3 +28,8 @@ type mailPreview struct {
     Subject string
     Preview string
 }
+
+//data for compose page
+type composeData struct {
+    Username string
+}

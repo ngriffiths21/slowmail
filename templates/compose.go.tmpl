@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+{{template "head.go.tmpl" "Compose new mail"}}
+<body>
+    {{template "nav.go.tmpl" .}}
+    <main>
+        <h1>Compose new mail</h1>
+        <form method="post">
+            <label for="to">To:</label>
+            <input id="to" class="edit">
+            <label for="subject">Subject:</label>
+            <input id="subject" class="edit">
+            <label for="content">Message:</label>
+            <textarea class="edit" id="content"></textarea>
+            <div class="spaced-line">
+                <button type="submit" formaction="/mail/compose/send">Send</button> <button type="submit" formaction="/mail/compose">Save</button>
+            </div>
+        </form>
+    </main>
+</body>
+</html>

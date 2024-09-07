@@ -25,8 +25,11 @@
 
 - `/signup`: Create new account
 - `/login`: Log in
-- `/mail/piece/{id}`: Send a mail
+- `/mail/draft/{id}/send`: Send a mail
 - `/mail/compose`: Save a newly composed draft
+- `/mail/compose/send`: Send a new mail
+- `/mail/draft/{id}`: Save a draft
+- `/account/`: Save account info
 
 ##### POST handlers
 
@@ -34,20 +37,10 @@
 2. Save data & retrieve any results
     - (`/signup`) Create account
     - (`/login`) Log in
-    - (`/mail/...`) Create mail
-    - (`/mail/piece/{id}`) Delete old draft
+    - (`/mail/compose/`) Save mail as draft
+    - (`/mail/compose/send`) Create and send mail
+    - (`/mail/draft/{id}`): Update mail
+    - (`/mail/draft/{id}/send`): Delete old draft and send mail
+    - (`/account/`): Update account
 3. (`/signup`, `/login`) Set auth cookie
 4. Redirect
-
-### PUT routes
-
-- `/mail/piece/{id}`: Save a draft
-- `/account/`: Save account info
-
-##### PUT handlers
-
-1. Check authentication
-2. Update data
-    - `/mail/{id}/draft`: Update mail
-    - `/account/`: Update account
-3. Redirect
