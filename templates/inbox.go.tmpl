@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
-{{template "head.go.tmpl" "Login"}}
+{{template "head.go.tmpl" "Inbox"}}
 <body>
-    {{template "nav.go.tmpl"}}
+    {{template "nav.go.tmpl" .}}
     <main>
         <h1>Inbox</h1>
 
@@ -21,6 +21,7 @@
             </tr>
             {{end}}
         </table>
+        {{template "pages.go.tmpl" .}}
     </main>
 </body>
 </html>

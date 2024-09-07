@@ -12,28 +12,26 @@ import (
     "strings"
     "errors"
     "time"
+    "strconv"
 )
-
-// data to pass to the signup page template
-type signupData struct {
-    UserExists bool
-}
-
-// data to pass to the login page template
-type loginData struct {
-    UserWrong bool
-    PassWrong bool
-    Username string
-}
-
-// data to pass to the mailbox templates
-type mailboxData struct {
-    Date string
-    Mails []Mail
-}
 
 // parsed templates, will be initialized on app init
 var temps *template.Template
+
+// page length for mailboxes
+var mailPerPage = 12
+
+/* trunc
+
+Safely truncate strings. It does not destroy unicode characters,
+but display width may vary. */
+func trunc(s string, n int) string {
+    runes := []rune(s)
+    if len(runes) <= n {
+        return s
+    }
+    return string(runes[0:n])
+}
 
 /* internalError
 
@@ -182,7 +180,7 @@ If there is no session cookie, or the session cookie has expired, then it redire
 to the login page.
 
 */
-func makeAuthedHandler(callback func(http.ResponseWriter, *http.Request, int)) func(http.ResponseWriter, *http.Request) {
+func makeAuthedHandler(callback func(http.ResponseWriter, *http.Request, SessionUser)) func(http.ResponseWriter, *http.Request) {
     return func(writer http.ResponseWriter, req *http.Request) {
         sessionCookie, err := req.Cookie("sessionid")
         if err == http.ErrNoCookie {
@@ -190,7 +188,7 @@ func makeAuthedHandler(callback func(http.ResponseWriter, *http.Request, int)) f
             return
         }
 
-        var session *Session
+        var session *SessionUser
         session, err = loadSession(sessionCookie.Value)
         if err != nil && err != ErrNotFound {
             internalError(writer, err)
@@ -200,19 +198,52 @@ func makeAuthedHandler(callback func(http.ResponseWriter, *http.Request, int)) f
             http.Redirect(writer, req, "/login", http.StatusSeeOther)
             return
         }
-        callback(writer, req, session.UserId)
+
+        callback(writer, req, *session)
     }
 }
 
+func parsePages(req *http.Request, mailcount int) (int, int) {
+    page, err := strconv.Atoi(req.FormValue("page"))
+    
+    // if no page or invalid page, reset to 1
+    if err != nil || page < 1 || (page-1)*mailPerPage >= mailcount {
+        page = 1
+    }
+    if page*mailPerPage > mailcount {
+        return page, 0
+    }
+    return page, page + 1
+}
+
 /* getInbox: display inbox */
-func getInbox(writer http.ResponseWriter, req *http.Request, user int) {
-    mails, err := loadMailbox(user, "inbox")
+func getInbox(writer http.ResponseWriter, req *http.Request, session SessionUser) {
+    mails, err := loadMailbox(session.UserId, "inbox")
     if err != nil {
         internalError(writer, err)
         return
     }
 
-    renderPage(writer, req, mailboxData{Date: time.Now().Format("Monday, Jan _2"), Mails: mails})
+    page, next := parsePages(req, len(mails))
+
+    // truncate the list of mails
+    var pageMails []Mail
+    if next == 0 {
+        pageMails = mails[(page-1)*mailPerPage:]
+    } else {
+        pageMails = mails[(page-1)*mailPerPage:page*mailPerPage]
+    }
+
+    // truncate the content of mail and construct previews
+    var previews []mailPreview
+
+    for _, m := range pageMails {
+        preview := mailPreview{MailId: m.MailId, FromName: m.FromName, Subject: m.Subject, Preview: trunc(m.Content, 40)}
+        previews = append(previews, preview)
+    }
+
+    renderPage(writer, req, mailboxData{Username: session.Username, Date: time.Now().Format("Monday, Jan _2"), Mails: previews,
+        PagePrev: page - 1, PageNext: next})
 }
 
 func startServer() error {

@@ -1,8 +1,15 @@
 <header>
-    <nav>
-        <a class="nav" href="/mail/folder/inbox">Inbox</a>
-        <a class="nav" href="/mail/folder/drafts">Drafts</a>
-        <a class="nav" href="/mail/folder/archive">Archive</a>
-        <a class="nav" href="/account">Account</a>
+    <nav class="spaced-line">
+        <div class="nav-chunk">
+            <a class="nav-link" href="/mail/folder/inbox">Inbox</a>
+            <a class="nav-link" href="/mail/folder/archive">Archive</a>
+            <a class="nav-link" href="/mail/folder/drafts">Drafts</a>
+            <a class="nav-link" href="/mail/compose">New</a>
+        </div>
+        <div class="nav-chunk">
+            <span>{{.Username}}</span>
+            <a class="nav-link" href="/account">Account</a>
+            <a class="nav-link" href="/logout">Log out</a>
+        </div>
     </nav>
 </header>

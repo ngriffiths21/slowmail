@@ -44,6 +44,18 @@ type User struct {
     RecoveryAddr string
 }
 
+// session record to retrieve and pass to application
+type SessionUser struct {
+    SessionId string
+    UserId int
+    Username string
+    DisplayName string
+    StartDate int64
+    Ip string
+    Expiration int64
+}
+
+// new session record to pass to db
 type Session struct {
     SessionId string
     UserId int
@@ -75,6 +87,10 @@ func (s *Session) ToPtrSlice() []any {
     return []any{&s.SessionId, &s.UserId, &s.StartDate, &s.Ip, &s.Expiration}
 }
 
+func (s *SessionUser) ToPtrSlice() []any {
+    return []any{&s.SessionId, &s.UserId, &s.Username, &s.DisplayName, &s.StartDate, &s.Ip, &s.Expiration}
+}
+
 func connectDb(dbPath string) error {
     var err error
 	db, err = sql.Open("sqlite3", dbPath)
@@ -97,6 +113,9 @@ returns ErrNotFound.
 */
 func loadSingleRow(query string, args []any, row DbRowPtr) error {
     rows, err := db.Query(query, args...)
+    if err != nil {
+        return err
+    }
 
     // need to call Next() before scanning result
     if !rows.Next() {
@@ -164,14 +183,15 @@ func newSession(session Session) error {
 Returns a pointer to the session. If no session is found, returns
 a nil pointer.
 */
-func loadSession(sessionId string) (*Session, error) {
+func loadSession(sessionId string) (*SessionUser, error) {
     query := `
-        select session_id, user_id, start_date, ip, expiration
-        from sessions
+        select session_id, sessions.user_id, username, display_name, start_date, ip, expiration
+        from sessions left join users
+            on sessions.user_id = users.user_id
         where session_id = ?
     `
 
-    var session Session
+    var session SessionUser
     err := loadSingleRow(query, []any{sessionId}, &session)
     if err == ErrNotFound {
         return nil, err
