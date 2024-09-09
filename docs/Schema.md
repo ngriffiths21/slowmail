@@ -42,6 +42,14 @@
 - `ip` (varchar(40) not null): IP address of client
 - `expiration` (unsigned int not null): Date time the session expires, in UNIX seconds
 
+##### Table `drafts`
+
+- `user_id` (integer not null): Slow Mail user ID of sender
+- `recipient` (varchar(40) not null): Recipient address
+- `subject` (text): Subject of message
+- `content` (text): Content of message
+- PRIMARY KEY (user_id, recipient)
+
 ### Data validation
 
 The following data constraints are the responsibility of the client to enforce (implemented using HTML attributes, or when necessary, client-side JavaSript). If invalid data reaches the database driver, this is considered an application bug, not a user error.
