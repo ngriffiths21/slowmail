@@ -5,7 +5,7 @@
 </head>
 <body>
     <div class="sign-in-form">
-        <form action="/signup" method="post">
+        <form action="/signup/" method="post">
             <h1>Sign Up</h1>
             {{if .UserExists}}
             <p>That username already exists, please choose a new one.</p>
@@ -19,7 +19,7 @@
             <button type="submit">Submit</button>
         </form>
         <br>
-        <a href="/login">Login</a>
+        <a href="/login/">Login</a>
     </div>
 </body>
 </html>

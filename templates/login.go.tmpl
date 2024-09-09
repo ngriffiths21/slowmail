@@ -3,7 +3,7 @@
 {{template "head.go.tmpl" "Login"}}
 <body>
     <div class="sign-in-form">
-        <form action="/login" method="post">
+        <form action="/login/" method="post">
             <h1>Login</h1>
             {{if .UserWrong}}
             <p>Username could not be found.</p>
@@ -18,7 +18,7 @@
             <button type="submit">Login</button>
         </form>
         <br>
-        <a href="/signup">Sign up</a>
+        <a href="/signup/">Sign up</a>
     </div>
 </body>
 </html>
