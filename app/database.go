@@ -113,6 +113,7 @@ returns ErrNotFound.
 */
 func loadSingleRow(query string, args []any, row DbRowPtr) error {
     rows, err := db.Query(query, args...)
+    defer rows.Close()
     if err != nil {
         return err
     }
@@ -146,23 +147,31 @@ If the returned *int is nil, the application failed to get a userId and an error
 have been returned.
 */
 func newUser(user User) (*int, error) {
-    var userId *int
     query := `insert into users values (null, ?, ?, ?, ?);`
     _, err := db.Exec(query, user.Username, user.Password, user.DisplayName, user.RecoveryAddr)
     if err == sqlite.ErrConstraintUnique {
         err = ErrNotUnique
-        return userId, err
+        return nil, err
+    } else if err != nil {
+        return nil, err
     }
     rows, err := db.Query("select last_insert_rowid()")
+    defer rows.Close()
     if err != nil {
-		return userId, err
+		return nil, err
 	}
     if !rows.Next() {
+        rows.Close()
         err = rows.Err()
-        return userId, err
+        return nil, err
     }
-    err = rows.Scan(userId)
-    return userId, err
+
+    var userId int
+    err = rows.Scan(&userId)
+    if err != nil {
+        return nil, err
+    }
+    return &userId, err
 }
 
 /* newSession: insert a session
@@ -199,6 +208,16 @@ func loadSession(sessionId string) (*SessionUser, error) {
     return &session, err
 }
 
+/* newMail
+
+Save a new mail. Returns database driver errors. */
+func newMail(mail Mail) error {
+    query := `insert into mail values (null, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    mailFields := mail.ToPtrSlice()[1:] // remove mailId
+    _, err := db.Exec(query, mailFields...)
+    return err
+}
+
 /* loadUserMail: load all mail for a user's mailbox
 
 Params:
@@ -215,6 +234,7 @@ func loadMailbox(user int, folder string) ([]Mail, error) {
     `
 
 	rows, err := db.Query(query, user, folder)
+    defer rows.Close()
 	if err != nil {
 		return nil, err
 	}

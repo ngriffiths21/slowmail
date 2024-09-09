@@ -5,16 +5,17 @@
     {{template "nav.go.tmpl" .}}
     <main>
         <h1>Compose new mail</h1>
-        <form method="post">
+        <form action="/mail/compose/send/" method="post">
             <label for="to">To:</label>
-            <input id="to" class="edit">
+            <input type="email" id="to" name="to" class="edit">
             <label for="subject">Subject:</label>
-            <input id="subject" class="edit">
+            <input type="text" id="subject" name="subject" class="edit">
             <label for="content">Message:</label>
-            <textarea class="edit" id="content"></textarea>
+            <textarea class="edit" name="content" id="content"></textarea>
             <div class="spaced-line">
-                <button type="submit" formaction="/mail/compose/send">Send</button> <button type="submit" formaction="/mail/compose">Save</button>
-            </div>
+                <button type="submit">Send</button>
+                <button type="submit" formaction="/mail/compose/">Save</button>
+           </div>
         </form>
     </main>
 </body>

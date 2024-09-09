@@ -15,11 +15,18 @@ import (
     "strconv"
 )
 
+// notice that message couldn't be sent
+
+const messageNotSent = "**Sorry, the below message could not be sent:**\n\n"
+
 // parsed templates, will be initialized on app init
 var temps *template.Template
 
 // page length for mailboxes
 var mailPerPage = 12
+
+// host name for email addresses
+var host string
 
 /* trunc
 
@@ -204,6 +211,7 @@ func makeAuthedHandler(callback func(http.ResponseWriter, *http.Request, Session
 }
 
 func parsePages(req *http.Request, mailcount int) (int, int) {
+    // FormValue ignores parse errors which is desired behavior in this case
     page, err := strconv.Atoi(req.FormValue("page"))
     
     // if no page or invalid page, reset to 1
@@ -238,7 +246,7 @@ func getInbox(writer http.ResponseWriter, req *http.Request, session SessionUser
     var previews []mailPreview
 
     for _, m := range pageMails {
-        preview := mailPreview{MailId: m.MailId, FromName: m.FromName, Subject: m.Subject, Preview: trunc(m.Content, 40)}
+        preview := mailPreview{MailId: m.MailId, FromName: m.FromName, Subject: m.Subject, Preview: trunc(m.Content, 60)}
         previews = append(previews, preview)
     }
 
@@ -250,25 +258,89 @@ func getCompose(writer http.ResponseWriter, req *http.Request, session SessionUs
     renderPage(writer, req, composeData{Username: session.Username})
 }
 
+func postComposeSend(writer http.ResponseWriter, req *http.Request, session SessionUser) {
+    err := req.ParseForm()
+    if err != nil {
+        internalError(writer, err)
+        return
+    }
+
+    recipient, recipientHost, hasAt := strings.Cut(req.PostForm.Get("to"), "@")
+    if !hasAt {
+        internalError(writer, errors.New("Error: malformed recipient email address"))
+        return
+    }
+    subject := req.PostForm.Get("subject")
+    content := req.PostForm.Get("content")
+
+    // first check if recipient exists
+    var user *User
+    if recipientHost == host {
+        user, err = loadUser(recipient)
+    }
+    var recipientId int
+    if recipientHost != host || err == ErrNotFound {
+        recipientId = session.UserId
+        subject = "Not sent: " + subject
+        content = messageNotSent + "Recipient: " + recipient + "\n\n" + content
+    } else if err != nil {
+        internalError(writer, err)
+        return
+    } else {
+        recipientId = user.UserId
+    }
+
+    currTime := time.Now()
+    currDate := time.Date(currTime.Year(), currTime.Month(), currTime.Day(), 0, 0, 0, 0, time.Local)
+    name := session.DisplayName
+    addr := session.Username + "@" + host
+
+    mail := Mail{UserId: recipientId,
+        Folder: "inbox",
+        Read: false,
+        OrigDate: currTime.Unix(),
+        Date: currDate.Unix(),
+        FromHead: name + " <" + addr + ">",
+        FromName: name,
+        FromAddr: addr,
+        ToHead: "",
+        MessageId: "",
+        InReplyTo: "",
+        Subject: subject,
+        Content: content,
+        MultiFrom: false,
+        MultiTo: false}
+    
+    err = newMail(mail)
+    if err != nil {
+        internalError(writer, err)
+        return
+    }
+
+    http.Redirect(writer, req, "/mail/folder/inbox", http.StatusSeeOther)
+}
+
 func startServer() error {
-    http.HandleFunc("GET /signup", getSignup)
-    http.HandleFunc("POST /signup", postSignup)
-    http.HandleFunc("GET /login", getLogin)
-    http.HandleFunc("POST /login", postLogin)
-    http.HandleFunc("GET /mail/folder/inbox", makeAuthedHandler(getInbox))
-    http.HandleFunc("GET /mail/compose", makeAuthedHandler(getCompose))
+    http.HandleFunc("GET /signup/{$}", getSignup)
+    http.HandleFunc("POST /signup/{$}", postSignup)
+    http.HandleFunc("GET /login/{$}", getLogin)
+    http.HandleFunc("POST /login/{$}", postLogin)
+    http.HandleFunc("GET /mail/folder/inbox/{$}", makeAuthedHandler(getInbox))
+    http.HandleFunc("GET /mail/compose/{$}", makeAuthedHandler(getCompose))
+    http.HandleFunc("POST /mail/compose/send/{$}", makeAuthedHandler(postComposeSend))
     http.Handle("GET /{$}", http.RedirectHandler("/mail/folder/inbox", http.StatusSeeOther))
 
     err := http.ListenAndServe(":8080", nil)
     return err
 }
 
-func main() {
+func appInit() {
     var dbPath string
-    flag.StringVar(&dbPath, "db", "", "Path to the database")
+    flag.StringVar(&dbPath, "db", "", "Path to the database (required)")
+    flag.StringVar(&host, "host", "", "Host name for email addresses (required)")
     flag.Parse()
-    if dbPath == "" {
-        log.Println("Error: no path to database provided.")
+    if dbPath == "" || host == "" {
+        log.Println("Error: please provide all required flags.")
         flag.Usage()
         os.Exit(1)
     }
@@ -283,9 +355,14 @@ func main() {
     if (err != nil) {
         log.Panic(err)
     }
-    defer db.Close()
+    // Connect sequentially to avoid write access conflicts
+    db.SetMaxOpenConns(1) // it is slow mail after all
+}
 
-    err = startServer()
+func main() {
+    appInit()
+    defer db.Close()
+    err := startServer()
     if (err != nil) {
         log.Panic(err)
     }
