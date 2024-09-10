@@ -6,17 +6,21 @@ import (
     "flag"
     "log"
     "os"
+    "time"
 )
 
 // notice that message couldn't be sent
 
 const messageNotSent = "**Sorry, the below message could not be sent:**\n\n"
 
+// page length for mailboxes
+const mailPerPage = 12
+
+// time of delivery, as a time.Duration since midnight local time
+var timeOfDelivery, _ = time.ParseDuration("14h35m")
+
 // parsed templates, will be initialized on app init
 var temps *template.Template
-
-// page length for mailboxes
-var mailPerPage = 12
 
 // host name for email addresses
 var host string

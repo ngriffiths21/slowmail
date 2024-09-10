@@ -93,9 +93,25 @@ func mailsToPage(mails []Mail, page int, next int) []Mail {
     return pageMails
 }
 
+func currDate() time.Time {
+    currTime := time.Now()
+    date := time.Date(currTime.Year(), currTime.Month(), currTime.Day(), 0, 0, 0, 0, time.Local)
+    if time.Since(date) < timeOfDelivery {
+        // not yet time to deliver today's mail, subtract a day
+
+        // it's simpler to use a duration for timeOfDelivery. technically
+        // if we set timeOfDelivery to 11:30pm the mail won't deliver on
+        // 23-hour daylight savings days, which is fine.
+        date = date.AddDate(0, 0, -1)
+    }
+    return date
+}
+
 /* getInbox: display inbox */
 func getInbox(writer http.ResponseWriter, req *http.Request, session SessionUser) {
-    mails, err := loadMailbox(session.UserId, "inbox")
+    inboxDate := currDate()
+
+    mails, err := loadInbox(session.UserId, inboxDate.Unix())
     if err != nil {
         internalError(writer, err)
         return
@@ -113,7 +129,7 @@ func getInbox(writer http.ResponseWriter, req *http.Request, session SessionUser
         previews = append(previews, preview)
     }
 
-    renderPage(writer, req, mailboxData{Username: session.Username, Date: time.Now().Format("Monday, Jan 2"), Mails: previews,
+    renderPage(writer, req, mailboxData{Username: session.Username, Date: inboxDate.Format("Monday, Jan 2"), Mails: previews,
         PagePrev: page - 1, PageNext: next})
 }
 
@@ -134,7 +150,10 @@ func getConv(writer http.ResponseWriter, req *http.Request, session SessionUser)
         internalError(writer, err)
         return
     }
-    mails, err := loadConv(session.UserId, sender.SenderAddr)
+
+    convDate := currDate().Unix()
+
+    mails, err := loadConv(session.UserId, sender.SenderAddr, convDate)
     if err != nil {
         internalError(writer, err)
         return

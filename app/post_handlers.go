@@ -209,6 +209,11 @@ func postComposeSend(writer http.ResponseWriter, req *http.Request, session Sess
 
     currTime := time.Now()
     currDate := time.Date(currTime.Year(), currTime.Month(), currTime.Day(), 0, 0, 0, 0, time.Local)
+    if time.Since(currDate) > timeOfDelivery {
+        // too early to deliver today
+        currDate = currDate.AddDate(0,0,1)
+    }
+
     name := session.DisplayName
     addr := session.Username + "@" + host
 

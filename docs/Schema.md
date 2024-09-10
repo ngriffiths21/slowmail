@@ -7,7 +7,7 @@
 - `mail_id` (integer primary key): Slow Mail id for mail
 - `user_id` (integer not null): Slow Mail user ID
 - `folder` (varchar(25)): Slow Mail folder
-    - check folder in('inbox', 'drafts', 'sent', 'archive')
+    - check folder in('inbox', 'archive')
 - `read` (tinyint not null): Boolean flag for read (set to 1 if anything other than unread inbox mail)
 - `orig_date` (unsigned int not null): Date time received in mail header, in Unix seconds
 - `date` (unsigned int not null): Date of delivery, rounded to midnight and given in Unix seconds

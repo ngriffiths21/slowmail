@@ -292,23 +292,54 @@ func loadMailArray(query string, args []any) ([]Mail, error) {
     return mails, err
 }
 
-/* loadUserMail: load all mail for a user's mailbox
+/* loadInbox: load all mail for a user's inbox
 
 Params:
 - user: Slow Mail user id
-- folder: folder (see schema for options)
+- date: date to match mail on
+
+loadInbox only returns the most recent mail per sender.
+
 */
-func loadMailbox(user int, folder string) ([]Mail, error) {
+func loadInbox(user int, date int64) ([]Mail, error) {
     query := `
         select mail_id, user_id, folder, read, orig_date, date,
             from_head, from_name, from_addr, to_head, message_id, in_reply_to,
             subject, content, multifrom, multito
-        from mail
-        where user_id = ? and folder = ?
-        order by date desc;
+        from (
+            -- Inner SELECT: mail on given date, marking most recent mail per sender
+            select *, row_number() over(partition by from_addr order by orig_date desc) as rownum
+            from mail
+            where user_id = ? and date = ?
+        ) 
+        where folder = 'inbox' and rownum = 1;
     `
 
-    return loadMailArray(query, []any{user, folder})
+    return loadMailArray(query, []any{user, date})
+}
+
+/* loadArchive: load all mail for a user's archive
+
+loadArchive returns all the most recent mail per sender, as long as the date
+is prior to the passed date.
+
+*/
+func loadArchive(user int, date int) ([]Mail, error) {
+    query := `
+        select mail_id, user_id, folder, read, orig_date, date,
+            from_head, from_name, from_addr, to_head, message_id, in_reply_to,
+            subject, content, multifrom, multito
+        from (
+            -- Inner SELECT: mail on given date, marking most recent mail per sender
+            select *, row_number() over(partition by from_addr order by orig_date desc) as rownum
+            from mail
+            where user_id = ? and date <= ?
+        ) 
+        where rownum = 1
+        order by orig_date desc;
+    `
+
+    return loadMailArray(query, []any{user, date})
 }
 
 /* newDraft
@@ -388,15 +419,15 @@ func loadSenderAddr(mailId string) (Sender, error) {
 
 Load array of mail corresponding to a conversation between the user and one sender.
 */
-func loadConv(userId int, senderAddr string) ([]Mail, error) {
+func loadConv(userId int, senderAddr string, date int64) ([]Mail, error) {
     query := `
         select mail_id, user_id, folder, read, orig_date, date,
             from_head, from_name, from_addr, to_head, message_id, in_reply_to,
             subject, content, multifrom, multito
         from mail
-        where user_id = ? and from_addr = ?
-        order by date desc;
+        where user_id = ? and from_addr = ? and date <= ?
+        order by orig_date desc;
     `
 
-    return loadMailArray(query, []any{userId, senderAddr})
+    return loadMailArray(query, []any{userId, senderAddr, date})
 }
