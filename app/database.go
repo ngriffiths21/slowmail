@@ -35,6 +35,14 @@ type Mail struct {
     MultiTo bool
 }
 
+// draft record
+type Draft struct {
+    UserId int
+    Recipient string
+    Subject string
+    Content string
+}
+
 // user record
 type User struct {
     UserId int
@@ -174,6 +182,25 @@ func newUser(user User) (*int, error) {
     return &userId, err
 }
 
+/* loadUser
+
+Load a user record. Returns an error if a duplicate is found.
+*/
+func loadUser(username string) (*User, error) {
+    query := `
+        select user_id, username, password, display_name, coalesce(recovery_addr, "")
+        from users
+        where username = ?;
+    `
+
+    var user User
+    err := loadSingleRow(query, []any{username}, &user)
+    if err == ErrNotFound {
+        return nil, err
+    }
+    return &user, err
+}
+
 /* newSession: insert a session
 
 The database enforces unique session IDs, ErrNotUnique will be returned if id was
@@ -259,23 +286,4 @@ func loadMailbox(user int, folder string) ([]Mail, error) {
     // check if an error happened during `Next()`
     err = rows.Err()
     return mails, err
-}
-
-/* loadUser
-
-Load a user record. Returns an error if a duplicate is found.
-*/
-func loadUser(username string) (*User, error) {
-    query := `
-        select user_id, username, password, display_name, coalesce(recovery_addr, "")
-        from users
-        where username = ?;
-    `
-
-    var user User
-    err := loadSingleRow(query, []any{username}, &user)
-    if err == ErrNotFound {
-        return nil, err
-    }
-    return &user, err
 }
