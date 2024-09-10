@@ -8,6 +8,7 @@
         <article class="{{if not .Draft}}removed{{end}}" id="reply">
             <h2>Reply</h1>
             <form action="/mail/conv/{{.MailId}}/send/" method="post">
+                <input type="hidden" name="to" value="{{.SenderAddr}}">
                 <label for="subject">Subject:</label>
                 <input type="text" name="subject" id="subject" class="edit" value="{{if .Draft}}{{.Draft.Subject}}{{end}}">
                 <label for="content">Message:</label>

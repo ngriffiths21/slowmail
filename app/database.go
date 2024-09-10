@@ -304,7 +304,8 @@ func loadMailbox(user int, folder string) ([]Mail, error) {
             from_head, from_name, from_addr, to_head, message_id, in_reply_to,
             subject, content, multifrom, multito
         from mail
-        where user_id = ? and folder = ?;
+        where user_id = ? and folder = ?
+        order by date desc;
     `
 
     return loadMailArray(query, []any{user, folder})
@@ -360,6 +361,16 @@ func loadDraft(userId int, recipient string) (*Draft, error) {
     return &draft, err
 }
 
+/* deleteDraft
+
+Deletes draft between userId and recipient.
+*/
+func deleteDraft(userId int, recipient string) error {
+    query := "delete from drafts where user_id = ? and recipient = ?"
+    _, err := db.Exec(query, userId, recipient)
+    return err
+}
+
 /* loadSenderAddr
 
 Get sender address and name by mail id. If an error occurred,
@@ -384,6 +395,7 @@ func loadConv(userId int, senderAddr string) ([]Mail, error) {
             subject, content, multifrom, multito
         from mail
         where user_id = ? and from_addr = ?
+        order by date desc;
     `
 
     return loadMailArray(query, []any{userId, senderAddr})

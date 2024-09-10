@@ -142,6 +142,12 @@ func startSession(writer http.ResponseWriter, req *http.Request, user int) {
     http.Redirect(writer, req, "/", http.StatusSeeOther)
 }
 
+/* logout */
+func logout(writer http.ResponseWriter, req *http.Request) {
+    http.SetCookie(writer, &http.Cookie{Name: "sessionid", Value: "", Expires: time.Unix(0,0)})
+    http.Redirect(writer, req, "/login/", http.StatusSeeOther)
+}
+
 func postComposeSave(writer http.ResponseWriter, req *http.Request, session SessionUser) {
     err := req.ParseForm()
     if err != nil {
@@ -173,7 +179,8 @@ func postComposeSend(writer http.ResponseWriter, req *http.Request, session Sess
         return
     }
 
-    recipient, recipientHost, hasAt := strings.Cut(req.PostForm.Get("to"), "@")
+    recipientAddr := req.PostForm.Get("to")
+    recipient, recipientHost, hasAt := strings.Cut(recipientAddr, "@")
     if !hasAt {
         internalError(writer, errors.New("Error: malformed recipient email address"))
         return
@@ -226,6 +233,8 @@ func postComposeSend(writer http.ResponseWriter, req *http.Request, session Sess
         internalError(writer, err)
         return
     }
+
+    _ = deleteDraft(session.UserId, recipientAddr)
 
     http.Redirect(writer, req, "/mail/folder/inbox", http.StatusSeeOther)
 }
