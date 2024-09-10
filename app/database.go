@@ -87,6 +87,10 @@ func (m *Mail) ToPtrSlice() []any {
         &m.Subject, &m.Content, &m.MultiFrom, &m.MultiTo}
 }
 
+func (d *Draft) ToPtrSlice() []any {
+    return []any{&d.UserId, &d.Recipient, &d.Subject, &d.Content}
+}
+
 func (u *User) ToPtrSlice() []any {
     return []any{&u.UserId, &u.Username, &u.Password, &u.DisplayName, &u.RecoveryAddr}
 }
@@ -157,9 +161,9 @@ have been returned.
 func newUser(user User) (*int, error) {
     query := `insert into users values (null, ?, ?, ?, ?);`
     _, err := db.Exec(query, user.Username, user.Password, user.DisplayName, user.RecoveryAddr)
-    if err == sqlite.ErrConstraintUnique {
-        err = ErrNotUnique
-        return nil, err
+    sqliteErr, _ := err.(sqlite.Error)
+    if sqliteErr.ExtendedCode == sqlite.ErrConstraintUnique {
+        return nil, ErrNotUnique
     } else if err != nil {
         return nil, err
     }
@@ -209,7 +213,8 @@ When it does happen, the server should simply try again. */
 func newSession(session Session) error {
     query := `insert into sessions values (?, ?, ?, ?, ?)`
     _, err := db.Exec(query, session.ToPtrSlice()...)
-    if err == sqlite.ErrConstraintUnique {
+    sqliteErr, _ := err.(sqlite.Error)
+    if sqliteErr.ExtendedCode == sqlite.ErrConstraintUnique {
         err = ErrNotUnique
     }
     return err
@@ -286,4 +291,26 @@ func loadMailbox(user int, folder string) ([]Mail, error) {
     // check if an error happened during `Next()`
     err = rows.Err()
     return mails, err
+}
+
+func newDraft(draft Draft) error {
+    query := "insert into drafts values (?, ?, ?, ?)"
+
+    _, err := db.Exec(query, draft.ToPtrSlice()...)
+    sqliteErr, _ := err.(sqlite.Error)
+
+    if sqliteErr.ExtendedCode == sqlite.ErrConstraintPrimaryKey {
+        return ErrNotUnique
+    }
+    return err
+}
+
+func updateDraft(draft Draft) error {
+    query := `
+        update drafts
+        set subject = ?, content = ?
+        where user_id = ? and recipient = ?
+    `
+    _, err := db.Exec(query, draft.Subject, draft.Content, draft.UserId, draft.Recipient)
+    return err
 }

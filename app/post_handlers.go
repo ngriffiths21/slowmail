@@ -149,7 +149,7 @@ func postComposeSave(writer http.ResponseWriter, req *http.Request, session Sess
         return
     }
 
-    draft := Draft{Recipient: req.PostForm.Get("to"), Subject: req.PostForm.Get("subject"),
+    draft := Draft{UserId: session.UserId, Recipient: req.PostForm.Get("to"), Subject: req.PostForm.Get("subject"),
         Content: req.PostForm.Get("content")}
     err = newDraft(draft)
     if err == ErrNotUnique {
