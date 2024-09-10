@@ -29,6 +29,24 @@ type mailPreview struct {
     Preview string
 }
 
+type mailDisplay struct {
+    Date string
+    Subject string
+    Content string
+}
+
+// data for the conversation view page
+type convData struct {
+    Username string
+    MailId string
+    SenderName string
+    SenderAddr string
+    Draft *mailDisplay
+    Mails []mailDisplay
+    PagePrev int
+    PageNext int
+}
+
 //data for compose page
 type composeData struct {
     Username string

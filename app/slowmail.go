@@ -30,6 +30,7 @@ func startServer() error {
     http.HandleFunc("GET /mail/compose/{$}", makeAuthedHandler(getCompose))
     http.HandleFunc("POST /mail/compose/send/{$}", makeAuthedHandler(postComposeSend))
     http.HandleFunc("POST /mail/compose/{$}", makeAuthedHandler(postComposeSave))
+    http.HandleFunc("GET /mail/conv/{mailId}/read/{$}", makeAuthedHandler(getConv))
     http.Handle("GET /{$}", http.RedirectHandler("/mail/folder/inbox", http.StatusSeeOther))
 
     err := http.ListenAndServe(":8080", nil)

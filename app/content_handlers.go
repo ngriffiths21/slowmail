@@ -6,6 +6,7 @@ import (
     "strings"
     "strconv"
     "time"
+    "errors"
 )
 
 /* trunc
@@ -78,6 +79,20 @@ func parsePages(req *http.Request, mailcount int) (int, int) {
     return page, page + 1
 }
 
+/* mailsToPage 
+
+Takes an array of mail, a page number, and a next page number, and returns a truncated array.
+*/
+func mailsToPage(mails []Mail, page int, next int) []Mail {
+    var pageMails []Mail
+    if next == 0 {
+        pageMails = mails[(page-1)*mailPerPage:]
+    } else {
+        pageMails = mails[(page-1)*mailPerPage:page*mailPerPage]
+    }
+    return pageMails
+}
+
 /* getInbox: display inbox */
 func getInbox(writer http.ResponseWriter, req *http.Request, session SessionUser) {
     mails, err := loadMailbox(session.UserId, "inbox")
@@ -88,13 +103,7 @@ func getInbox(writer http.ResponseWriter, req *http.Request, session SessionUser
 
     page, next := parsePages(req, len(mails))
 
-    // truncate the list of mails
-    var pageMails []Mail
-    if next == 0 {
-        pageMails = mails[(page-1)*mailPerPage:]
-    } else {
-        pageMails = mails[(page-1)*mailPerPage:page*mailPerPage]
-    }
+    pageMails := mailsToPage(mails, page, next)
 
     // truncate the content of mail and construct previews
     var previews []mailPreview
@@ -104,8 +113,55 @@ func getInbox(writer http.ResponseWriter, req *http.Request, session SessionUser
         previews = append(previews, preview)
     }
 
-    renderPage(writer, req, mailboxData{Username: session.Username, Date: time.Now().Format("Monday, Jan _2"), Mails: previews,
+    renderPage(writer, req, mailboxData{Username: session.Username, Date: time.Now().Format("Monday, Jan 2"), Mails: previews,
         PagePrev: page - 1, PageNext: next})
+}
+
+/* getConv 
+
+Parses the request path to get a mail ID. Loads the sender associated with that mail.
+Then renders the conversation page, including all mail with that sender, as well as
+any saved draft to that sender.
+*/
+func getConv(writer http.ResponseWriter, req *http.Request, session SessionUser) {
+    mailId := req.PathValue("mailId")
+    if mailId == "" {
+        internalError(writer, errors.New("Could not parse mail id from conversation path"))
+        return
+    }
+    sender, err := loadSenderAddr(mailId)
+    if err != nil {
+        internalError(writer, err)
+        return
+    }
+    mails, err := loadConv(session.UserId, sender.SenderAddr)
+    if err != nil {
+        internalError(writer, err)
+        return
+    }
+    draft, err := loadDraft(session.UserId, sender.SenderAddr)
+    if err != nil && err != ErrNotFound {
+        internalError(writer, err)
+        return
+    }
+
+    page, next := parsePages(req, len(mails))
+    var draftDisplay *mailDisplay
+    if page == 1 && draft != nil {
+        // only show the draft on first page
+        draftDisplay = &mailDisplay{Subject: draft.Subject, Content: draft.Content}
+    }
+    pageMails := mailsToPage(mails, page, next)
+
+    var displayMails []mailDisplay
+
+    for _, m := range pageMails {
+        display := mailDisplay{Date: time.Unix(m.Date, 0).Format("Monday, Jan 2, 2006"), Subject: m.Subject, Content: m.Content}
+        displayMails = append(displayMails, display)
+    }
+
+    renderPage(writer, req, convData{Username: session.Username, MailId: mailId, SenderName: sender.SenderName, SenderAddr: sender.SenderAddr,
+        Draft: draftDisplay, Mails: displayMails, PagePrev: page - 1, PageNext: next})
 }
 
 func getCompose(writer http.ResponseWriter, req *http.Request, session SessionUser) {

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+{{template "head.go.tmpl" "Conversation"}}
+<body>
+    {{template "nav.go.tmpl" .}}
+    <main>
+        <h1>Conversation with {{.SenderName}}</h1>
+        <article class="{{if not .Draft}}removed{{end}}" id="reply">
+            <h2>Reply</h1>
+            <form action="/mail/conv/{{.MailId}}/send/" method="post">
+                <label for="subject">Subject:</label>
+                <input type="text" name="subject" id="subject" class="edit" value="{{if .Draft}}{{.Draft.Subject}}{{end}}">
+                <label for="content">Message:</label>
+                <textarea name="content" class="edit" id="content">{{if .Draft}}{{.Draft.Content}}{{end}}</textarea>
+                <div class="spaced-line">
+                    <button type="submit">Send</button>
+                    <button type="submit" formaction="/mail/conv/{{.MailId}}/save/">Save</button>
+                </div>
+            </form>
+        </article>
+        <div class="connector {{if not .Draft}}removed{{end}}" id="replyvline"></div>
+
+        
+        <article>
+            {{with index .Mails 0}}
+            <h2>{{.Subject}}</h2>
+            <h3>{{.Date}}</h3>
+            <p>{{.Content}}</p>
+            {{end}}
+            <button type="button" id="replybutton" class="{{if .Draft}}removed{{end}}">Start a reply</button>
+        </article>
+        
+
+        {{range slice .Mails 1}}
+        <div class="connector"></div>
+        <article>
+            <h2>{{.Subject}}</h2>
+            <h3>{{.Date}}</h3>
+            <p>{{.Content}}</p>
+        </article>
+        {{end}}
+
+        {{template "pages.go.tmpl" .}}
+    </main>
+    <script type="text/javascript">
+        const replybtn = document.getElementById("replybutton");
+        const replybox = document.getElementById("reply");
+        const replyvline = document.getElementById("replyvline");
+        
+        function startReply(event) {           
+            replybtn.classList.add('removed');
+            replybox.classList.remove('removed');
+            replyvline.classList.remove('removed');
+        }
+
+        replybtn.onclick = startReply;
+    </script>
+</body>
+</html>

@@ -85,6 +85,15 @@ func TestPostComposeSave(t *testing.T) {
 	}
 }
 
+func TestGetConv(t *testing.T) {
+	rw := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/mail/conv/1/read/", nil)
+	makeAuthedHandler(getConv)(rw, req)
+	if rw.Code != 200 {
+		t.Errorf("Expected status 200; got %d", rw.Code)
+	}
+}
+
 func TestMain(m *testing.M) {
 	os.Chdir("..") // tests initialize to the package directory by default
 	appInit()

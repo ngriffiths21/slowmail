@@ -72,6 +72,11 @@ type Session struct {
     Expiration int64
 }
 
+type Sender struct{
+    SenderAddr string
+    SenderName string
+}
+
 // errors
 var (
     ErrNotFound = errors.New("query returned nothing from the database.")
@@ -80,6 +85,10 @@ var (
 )
 
 var db *sql.DB
+
+func (s *Sender) ToPtrSlice() []any {
+    return []any{&s.SenderAddr, &s.SenderName}
+}
 
 func (m *Mail) ToPtrSlice() []any {
     return []any{&m.MailId, &m.UserId, &m.Folder, &m.Read, &m.OrigDate, &m.Date, &m.FromHead, &m.FromName,
@@ -250,22 +259,12 @@ func newMail(mail Mail) error {
     return err
 }
 
-/* loadUserMail: load all mail for a user's mailbox
+/* loadMailArray
 
-Params:
-- user: Slow Mail user id
-- folder: folder (see schema for options)
+Load an array of mail from the database using a given query and argument list.
 */
-func loadMailbox(user int, folder string) ([]Mail, error) {
-    query := `
-        select mail_id, user_id, folder, read, orig_date, date,
-            from_head, from_name, from_addr, to_head, message_id, in_reply_to,
-            subject, content, multifrom, multito
-        from mail
-        where user_id = ? and folder = ?;
-    `
-
-	rows, err := db.Query(query, user, folder)
+func loadMailArray(query string, args []any) ([]Mail, error) {
+	rows, err := db.Query(query, args...)
     defer rows.Close()
 	if err != nil {
 		return nil, err
@@ -293,6 +292,28 @@ func loadMailbox(user int, folder string) ([]Mail, error) {
     return mails, err
 }
 
+/* loadUserMail: load all mail for a user's mailbox
+
+Params:
+- user: Slow Mail user id
+- folder: folder (see schema for options)
+*/
+func loadMailbox(user int, folder string) ([]Mail, error) {
+    query := `
+        select mail_id, user_id, folder, read, orig_date, date,
+            from_head, from_name, from_addr, to_head, message_id, in_reply_to,
+            subject, content, multifrom, multito
+        from mail
+        where user_id = ? and folder = ?;
+    `
+
+    return loadMailArray(query, []any{user, folder})
+}
+
+/* newDraft
+
+Insert a new draft
+*/
 func newDraft(draft Draft) error {
     query := "insert into drafts values (?, ?, ?, ?)"
 
@@ -305,6 +326,10 @@ func newDraft(draft Draft) error {
     return err
 }
 
+/* updateDraft
+
+Update an existing draft
+*/
 func updateDraft(draft Draft) error {
     query := `
         update drafts
@@ -313,4 +338,53 @@ func updateDraft(draft Draft) error {
     `
     _, err := db.Exec(query, draft.Subject, draft.Content, draft.UserId, draft.Recipient)
     return err
+}
+
+/* loadDraft
+
+Load a draft by userId and recipient. Will return not found/multiple record errors as described
+in loadSingleRow.
+*/
+func loadDraft(userId int, recipient string) (*Draft, error) {
+    query := `
+        select user_id, recipient, subject, content
+        from drafts
+        where user_id = ? and recipient = ?
+    `
+
+    var draft Draft
+    err := loadSingleRow(query, []any{userId, recipient}, &draft)
+    if err == ErrNotFound {
+        return nil, err
+    }
+    return &draft, err
+}
+
+/* loadSenderAddr
+
+Get sender address and name by mail id. If an error occurred,
+sender return value is undefined.
+*/
+func loadSenderAddr(mailId string) (Sender, error) {
+    query := "select from_addr, from_name from mail where mail_id = ?"
+
+    var sender Sender
+    err := loadSingleRow(query, []any{mailId}, &sender)
+    return sender, err
+}
+
+/* loadConv
+
+Load array of mail corresponding to a conversation between the user and one sender.
+*/
+func loadConv(userId int, senderAddr string) ([]Mail, error) {
+    query := `
+        select mail_id, user_id, folder, read, orig_date, date,
+            from_head, from_name, from_addr, to_head, message_id, in_reply_to,
+            subject, content, multifrom, multito
+        from mail
+        where user_id = ? and from_addr = ?
+    `
+
+    return loadMailArray(query, []any{userId, senderAddr})
 }

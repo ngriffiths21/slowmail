@@ -30,8 +30,28 @@ h1 {
     visibility: hidden;
 }
 
+.removed {
+    display: none;
+}
+
+/* a vertical line to connect bordered objects */
+.connector {
+    width: 1px;
+    height: 32px;
+    margin-left: auto;
+    margin-right: auto;
+    background: #888888;
+}
 
 /* NAVIGATION */
+
+nav {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    border-bottom-style: solid;
+    border-width: 1px;
+    border-color: #888888;
+}
 
 div.nav-chunk {
     width: fit-content;
@@ -116,4 +136,12 @@ a.cell {
 
 .preview-col {
     width: 14rem;
+}
+
+/* Mail articles */
+article {
+    border-style: solid;
+    border-width: 1px;
+    border-color: #888888;
+    padding: 16px;
 }
