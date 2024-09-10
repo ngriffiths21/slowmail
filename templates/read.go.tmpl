@@ -26,7 +26,7 @@
             {{with index .Mails 0}}
             <h2>{{.Subject}}</h2>
             <h3>{{.Date}}</h3>
-            <p>{{.Content}}</p>
+            <p class="displayed-text">{{.Content}}</p>
             {{end}}
             <button type="button" id="replybutton" class="{{if .Draft}}removed{{end}}">Start a reply</button>
         </article>
@@ -37,7 +37,7 @@
         <article>
             <h2>{{.Subject}}</h2>
             <h3>{{.Date}}</h3>
-            <p>{{.Content}}</p>
+            <p class="displayed-text">{{.Content}}</p>
         </article>
         {{end}}
 
