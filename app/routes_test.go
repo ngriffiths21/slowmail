@@ -85,6 +85,18 @@ func TestPostLogin(t *testing.T) {
 	}
 }
 
+func TestGetCompose(t *testing.T) {
+	rw := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/mail/compose/", nil)
+	req.AddCookie(&http.Cookie{Name: "sessionid", Value: "1"})
+
+	makeAuthedHandler(getCompose)(rw, req)
+	if rw.Code != 200 {
+		checkSession(t)
+		t.Errorf("Expected status 200; got %d", rw.Code)
+	}
+}
+
 func TestPostComposeSave(t *testing.T) {
 	query := "delete from drafts where recipient = 'test@localhost' and user_id = 1;"
 	_, err := db.Exec(query)
@@ -111,6 +123,37 @@ func TestPostComposeSave(t *testing.T) {
 	}
 }
 
+func TestPostDraftSave(t *testing.T) {
+	query := "delete from drafts where recipient = 'test@localhost' and user_id = 1;"
+	_, err := db.Exec(query)
+	if err != nil {
+		t.Errorf("Database error: %s", err.Error())
+	}
+
+	rw := httptest.NewRecorder()
+	body := strings.NewReader("to=test%40localhost&subject=test%20subject&content=nothing%20here")
+	req := httptest.NewRequest("POST", "/mail/conv/1/save/", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: "sessionid", Value: "1"})
+
+	makeAuthedHandler(postComposeSave)(rw, req)
+
+	response := rw.Result()
+	location, _ := response.Location()
+
+
+	if response.StatusCode != 303 || location.Path != "/mail/conv/1/read/" {
+		checkSession(t)
+		checkMail(t)
+		t.Errorf("Expected status 303 to '/mail/conv/1/read/' after first draft save; got status %d, '%s'", rw.Code, location.Path)
+	}
+	rw = httptest.NewRecorder()
+	makeAuthedHandler(postComposeSave)(rw, req)
+	if rw.Code != 303 {
+		t.Errorf("Expected status 303 after repeat draft save; got %d", rw.Code)
+	}
+}
+
 func TestPostComposeSend(t *testing.T) {
 	rw := httptest.NewRecorder()
 	body := strings.NewReader("to=test%40localhost&subject=test%20subject&content=nothing%20here")
@@ -122,7 +165,22 @@ func TestPostComposeSend(t *testing.T) {
 
 	if rw.Code != 303 {
 		checkSession(t)
-		t.Errorf("Expected status 303 after first draft save; got %d", rw.Code)
+		t.Errorf("Expected status 303; got %d", rw.Code)
+	}
+}
+
+func TestPostDraftSend(t *testing.T) {
+	rw := httptest.NewRecorder()
+	body := strings.NewReader("to=test%40localhost&subject=test%20subject&content=nothing%20here")
+	req := httptest.NewRequest("POST", "/mail/conv/1/send/", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: "sessionid", Value: "1"})
+
+	makeAuthedHandler(postComposeSend)(rw, req)
+
+	if rw.Code != 303 {
+		checkSession(t)
+		t.Errorf("Expected status 303; got %d", rw.Code)
 	}
 }
 
@@ -132,6 +190,18 @@ func TestGetInbox(t *testing.T) {
 	req.AddCookie(&http.Cookie{Name: "sessionid", Value: "1"})
 
 	makeAuthedHandler(getInbox)(rw, req)
+	if rw.Code != 200 {
+		checkSession(t)
+		t.Errorf("Expected status 200; got %d", rw.Code)
+	}
+}
+
+func TestGetArchive(t *testing.T) {
+	rw := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/mail/folder/archive/", nil)
+	req.AddCookie(&http.Cookie{Name: "sessionid", Value: "1"})
+
+	makeAuthedHandler(getArchive)(rw, req)
 	if rw.Code != 200 {
 		checkSession(t)
 		t.Errorf("Expected status 200; got %d", rw.Code)
@@ -149,6 +219,17 @@ func TestGetConv(t *testing.T) {
 		checkSession(t)
 		checkMail(t)
 		t.Errorf("Expected status 200; got %d", rw.Code)
+	}
+}
+
+func TestLogout(t *testing.T) {
+	rw := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/logout/", nil)
+	req.AddCookie(&http.Cookie{Name: "sessionid", Value: "1"})
+
+	logout(rw, req)
+	if rw.Code != 303 {
+		t.Errorf("Expected status 303; got %d", rw.Code)
 	}
 }
 
