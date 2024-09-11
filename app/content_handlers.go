@@ -7,6 +7,7 @@ import (
     "strconv"
     "time"
     "errors"
+    "bytes"
 )
 
 /* trunc
@@ -45,10 +46,16 @@ func renderPage(writer http.ResponseWriter, req *http.Request, pdata any) {
     }
     // extract last part of path
     tempName := url[strings.LastIndex(url, "/") + 1:]
-    err := temps.ExecuteTemplate(writer, tempName + ".go.tmpl", pdata)
+
+    var b bytes.Buffer
+    err := temps.ExecuteTemplate(&b, tempName + ".go.tmpl", pdata)
     if (err != nil) {
         internalError(writer, err)
+        return
     }
+    // buffered so that if an error occurs on template execution, the partial data won't send to client.
+    // failing to do this results in an internal error message embedded in a partial HTML page.
+    b.WriteTo(writer)
 }
 
 func getSignup(writer http.ResponseWriter, req *http.Request) {

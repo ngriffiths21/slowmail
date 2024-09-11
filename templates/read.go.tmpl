@@ -22,6 +22,7 @@
         <div class="connector {{if not .Draft}}removed{{end}}" id="replyvline"></div>
 
         
+        {{if .Mails}}
         <article>
             {{with index .Mails 0}}
             <h2>{{.Subject}}</h2>
@@ -30,8 +31,9 @@
             {{end}}
             <button type="button" id="replybutton" class="{{if .Draft}}removed{{end}}">Start a reply</button>
         </article>
+        {{end}}
         
-
+        {{if .Mails}}
         {{range slice .Mails 1}}
         <div class="connector"></div>
         <article>
@@ -39,6 +41,7 @@
             <h3>{{.Date}}</h3>
             <p class="displayed-text">{{.Content}}</p>
         </article>
+        {{end}}
         {{end}}
 
         {{template "pages.go.tmpl" .}}

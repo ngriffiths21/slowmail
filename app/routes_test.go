@@ -8,6 +8,30 @@ import (
 	"strings"
 )
 
+// The tests make the following assumptions about the test database (see error messages):
+func checkUser(t *testing.T) {
+	user, err := loadUser("test")
+	if err != nil || user.UserId != 1 {
+		t.Error("Testing requires access to a user 'test', with password 'test' and user_id 1. See test file.")
+	}
+}
+
+func checkSession(t *testing.T) {
+	session, err := loadSession("1")
+	if err != nil || session.UserId != 1 {
+		t.Error("Testing requires access to a session with sessionid 1 for user 'test'. See test file.")
+	}
+}
+
+func checkMail(t *testing.T) {
+	mail, err := loadMailArray("select * from mail where mail_id = 1 and user_id = 1", []any{})
+	if err != nil || len(mail) == 0 {
+		t.Error("Testing requires access to a mail with mail_id 1 and user_id 1. See test file.")
+	}
+}
+
+/* TESTS */
+
 func TestGetSignup(t *testing.T) {
 	rw := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/signup/", nil)
@@ -56,6 +80,7 @@ func TestPostLogin(t *testing.T) {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	postLogin(rw, req)
 	if rw.Code != 303 {
+		checkUser(t)
 		t.Errorf("Expected status 303; got %d", rw.Code)
 	}
 }
@@ -76,6 +101,7 @@ func TestPostComposeSave(t *testing.T) {
 	makeAuthedHandler(postComposeSave)(rw, req)
 
 	if rw.Code != 303 {
+		checkSession(t)
 		t.Errorf("Expected status 303 after first draft save; got %d", rw.Code)
 	}
 	rw = httptest.NewRecorder()
@@ -85,11 +111,43 @@ func TestPostComposeSave(t *testing.T) {
 	}
 }
 
+func TestPostComposeSend(t *testing.T) {
+	rw := httptest.NewRecorder()
+	body := strings.NewReader("to=test%40localhost&subject=test%20subject&content=nothing%20here")
+	req := httptest.NewRequest("POST", "/mail/compose/send/", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: "sessionid", Value: "1"})
+
+	makeAuthedHandler(postComposeSend)(rw, req)
+
+	if rw.Code != 303 {
+		checkSession(t)
+		t.Errorf("Expected status 303 after first draft save; got %d", rw.Code)
+	}
+}
+
+func TestGetInbox(t *testing.T) {
+	rw := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/mail/folder/inbox/", nil)
+	req.AddCookie(&http.Cookie{Name: "sessionid", Value: "1"})
+
+	makeAuthedHandler(getInbox)(rw, req)
+	if rw.Code != 200 {
+		checkSession(t)
+		t.Errorf("Expected status 200; got %d", rw.Code)
+	}
+}
+
 func TestGetConv(t *testing.T) {
 	rw := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/mail/conv/1/read/", nil)
+	req.AddCookie(&http.Cookie{Name: "sessionid", Value: "1"})
+	req.SetPathValue("mailId", "1")
+
 	makeAuthedHandler(getConv)(rw, req)
 	if rw.Code != 200 {
+		checkSession(t)
+		checkMail(t)
 		t.Errorf("Expected status 200; got %d", rw.Code)
 	}
 }
@@ -97,5 +155,6 @@ func TestGetConv(t *testing.T) {
 func TestMain(m *testing.M) {
 	os.Chdir("..") // tests initialize to the package directory by default
 	appInit()
+
 	os.Exit(m.Run())
 }
