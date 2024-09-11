@@ -1,11 +1,11 @@
 package main
 
 import (
-	"testing"
+	"net/http"
 	"net/http/httptest"
 	"os"
-	"net/http"
 	"strings"
+	"testing"
 )
 
 // The tests make the following assumptions about the test database (see error messages):
@@ -140,7 +140,6 @@ func TestPostDraftSave(t *testing.T) {
 
 	response := rw.Result()
 	location, _ := response.Location()
-
 
 	if response.StatusCode != 303 || location.Path != "/mail/conv/1/read/" {
 		checkSession(t)

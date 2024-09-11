@@ -1,4 +1,4 @@
-module example.com/slowmail
+module github.com/ngriffiths21/slowmail
 
 go 1.22.5
 
