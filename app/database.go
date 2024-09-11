@@ -324,7 +324,7 @@ loadArchive returns all the most recent mail per sender, as long as the date
 is prior to the passed date.
 
 */
-func loadArchive(user int, date int) ([]Mail, error) {
+func loadArchive(user int, date int64) ([]Mail, error) {
     query := `
         select mail_id, user_id, folder, read, orig_date, date,
             from_head, from_name, from_addr, to_head, message_id, in_reply_to,

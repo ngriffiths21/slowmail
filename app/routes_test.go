@@ -189,7 +189,7 @@ func TestGetInbox(t *testing.T) {
 	req := httptest.NewRequest("GET", "/mail/folder/inbox/", nil)
 	req.AddCookie(&http.Cookie{Name: "sessionid", Value: "1"})
 
-	makeAuthedHandler(getInbox)(rw, req)
+	makeAuthedHandler(getMailbox)(rw, req)
 	if rw.Code != 200 {
 		checkSession(t)
 		t.Errorf("Expected status 200; got %d", rw.Code)
@@ -201,7 +201,7 @@ func TestGetArchive(t *testing.T) {
 	req := httptest.NewRequest("GET", "/mail/folder/archive/", nil)
 	req.AddCookie(&http.Cookie{Name: "sessionid", Value: "1"})
 
-	makeAuthedHandler(getArchive)(rw, req)
+	makeAuthedHandler(getMailbox)(rw, req)
 	if rw.Code != 200 {
 		checkSession(t)
 		t.Errorf("Expected status 200; got %d", rw.Code)

@@ -114,11 +114,20 @@ func currDate() time.Time {
     return date
 }
 
-/* getInbox: display inbox */
-func getInbox(writer http.ResponseWriter, req *http.Request, session SessionUser) {
-    inboxDate := currDate()
+/* getMailbox: display inbox or archive */
+func getMailbox(writer http.ResponseWriter, req *http.Request, session SessionUser) {
+    mailDate := currDate()
+    var err error
+    var mails []Mail
+    if req.URL.Path == "/mail/folder/inbox/" {
+        mails, err = loadInbox(session.UserId, mailDate.Unix())
+    } else if req.URL.Path == "/mail/folder/archive/" {
+        mails, err = loadArchive(session.UserId, mailDate.Unix())
+    } else {
+        internalError(writer, errors.New("Unknown folder requested"))
+        return
+    }
 
-    mails, err := loadInbox(session.UserId, inboxDate.Unix())
     if err != nil {
         internalError(writer, err)
         return
@@ -136,7 +145,7 @@ func getInbox(writer http.ResponseWriter, req *http.Request, session SessionUser
         previews = append(previews, preview)
     }
 
-    renderPage(writer, req, mailboxData{Username: session.Username, Date: inboxDate.Format("Monday, Jan 2"), Mails: previews,
+    renderPage(writer, req, mailboxData{Username: session.Username, Date: mailDate.Format("Monday, Jan 2"), Mails: previews,
         PagePrev: page - 1, PageNext: next})
 }
 
