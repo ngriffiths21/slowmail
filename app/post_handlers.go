@@ -144,7 +144,7 @@ func startSession(writer http.ResponseWriter, req *http.Request, user int) {
 
 /* logout */
 func logout(writer http.ResponseWriter, req *http.Request) {
-    http.SetCookie(writer, &http.Cookie{Name: "sessionid", Value: "", Expires: time.Unix(0,0)})
+    http.SetCookie(writer, &http.Cookie{Name: "sessionid", Value: "", Expires: time.Unix(0,0), Path: "/"})
     http.Redirect(writer, req, "/login/", http.StatusSeeOther)
 }
 
