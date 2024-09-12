@@ -44,6 +44,7 @@
 
 ##### Table `drafts`
 
+- `draft_id` (integer primary key): Draft ID
 - `user_id` (integer not null): Slow Mail user ID of sender
 - `recipient` (varchar(40) not null): Recipient address
 - `subject` (text): Subject of message

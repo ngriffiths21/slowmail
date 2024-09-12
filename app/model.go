@@ -23,11 +23,27 @@ type mailboxData struct {
 	PageNext int
 }
 
+// data to pass to the draft templates
+type draftsData struct {
+	Username string
+	Date     string
+	Mails    []draftPreview
+	PagePrev int
+	PageNext int
+}
+
 type mailPreview struct {
 	MailId   int
 	FromName string
 	Subject  string
 	Preview  string
+}
+
+type draftPreview struct {
+	DraftId   int
+	Recipient string
+	Subject   string
+	Preview   string
 }
 
 type mailDisplay struct {
@@ -48,7 +64,7 @@ type convData struct {
 	PageNext   int
 }
 
-//data for compose page
+// data for compose page
 type composeData struct {
 	Username string
 }

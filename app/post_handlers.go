@@ -10,12 +10,12 @@ import (
 	"time"
 )
 
-/* makeAuthedHandler
+/*
+	makeAuthedHandler
 
 Returns a handler that checks session authentication and then calls the next handler.
 If there is no session cookie, or the session cookie has expired, then it redirects
 to the login page.
-
 */
 func makeAuthedHandler(callback func(http.ResponseWriter, *http.Request, SessionUser)) func(http.ResponseWriter, *http.Request) {
 	return func(writer http.ResponseWriter, req *http.Request) {
@@ -40,7 +40,8 @@ func makeAuthedHandler(callback func(http.ResponseWriter, *http.Request, Session
 	}
 }
 
-/* postSignup
+/*
+	postSignup
 
 Parses a signup form and inserts a new user to the database.
 This route handles duplicate username as a user error, and all
@@ -69,13 +70,14 @@ func postSignup(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if userid == nil {
-		internalError(writer, errors.New("No userid was returned by the database."))
+		internalError(writer, errors.New("no userid was returned by the database"))
 		return
 	}
 	startSession(writer, req, *userid)
 }
 
-/* postLogin
+/*
+	postLogin
 
 This route handles missing username and missing passwords as user errors.
 All others are internal errors.
@@ -106,7 +108,8 @@ func postLogin(writer http.ResponseWriter, req *http.Request) {
 	startSession(writer, req, user.UserId)
 }
 
-/* startSession
+/*
+	startSession
 
 Create a new session, save it to the database, set auth cookie, and redirect.
 */
@@ -182,7 +185,7 @@ func postComposeSend(writer http.ResponseWriter, req *http.Request, session Sess
 	recipientAddr := req.PostForm.Get("to")
 	recipient, recipientHost, hasAt := strings.Cut(recipientAddr, "@")
 	if !hasAt {
-		internalError(writer, errors.New("Error: malformed recipient email address"))
+		internalError(writer, errors.New("malformed recipient email address"))
 		return
 	}
 	subject := req.PostForm.Get("subject")

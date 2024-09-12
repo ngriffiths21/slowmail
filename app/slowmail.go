@@ -33,6 +33,7 @@ func startServer() error {
 	http.HandleFunc("GET /logout/{$}", logout)
 	http.HandleFunc("GET /mail/folder/inbox/{$}", makeAuthedHandler(getMailbox))
 	http.HandleFunc("GET /mail/folder/archive/{$}", makeAuthedHandler(getMailbox))
+	http.HandleFunc("GET /mail/folder/drafts/{$}", makeAuthedHandler(getDrafts))
 	http.HandleFunc("GET /mail/compose/{$}", makeAuthedHandler(getCompose))
 	http.HandleFunc("POST /mail/compose/send/{$}", makeAuthedHandler(postComposeSend))
 	http.HandleFunc("POST /mail/compose/{$}", makeAuthedHandler(postComposeSave))

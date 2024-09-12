@@ -24,7 +24,7 @@ func checkSession(t *testing.T) {
 }
 
 func checkMail(t *testing.T) {
-	mail, err := loadMailArray("select * from mail where mail_id = 1 and user_id = 1", []any{})
+	mail, err := loadMailArray[Mail]("select * from mail where mail_id = 1 and user_id = 1", []any{})
 	if err != nil || len(mail) == 0 {
 		t.Error("Testing requires access to a mail with mail_id 1 and user_id 1. See test file.")
 	}
@@ -201,6 +201,18 @@ func TestGetArchive(t *testing.T) {
 	req.AddCookie(&http.Cookie{Name: "sessionid", Value: "1"})
 
 	makeAuthedHandler(getMailbox)(rw, req)
+	if rw.Code != 200 {
+		checkSession(t)
+		t.Errorf("Expected status 200; got %d", rw.Code)
+	}
+}
+
+func TestGetDrafts(t *testing.T) {
+	rw := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/mail/folder/drafts/", nil)
+	req.AddCookie(&http.Cookie{Name: "sessionid", Value: "1"})
+
+	makeAuthedHandler(getDrafts)(rw, req)
 	if rw.Code != 200 {
 		checkSession(t)
 		t.Errorf("Expected status 200; got %d", rw.Code)

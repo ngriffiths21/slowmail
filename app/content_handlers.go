@@ -10,10 +10,12 @@ import (
 	"time"
 )
 
-/* trunc
+/*
+	trunc
 
 Safely truncate strings. It does not destroy unicode characters,
-but display width may vary. */
+but display width may vary.
+*/
 func trunc(s string, n int) string {
 	runes := []rune(s)
 	if len(runes) <= n {
@@ -22,7 +24,8 @@ func trunc(s string, n int) string {
 	return string(runes[0:n])
 }
 
-/* internalError
+/*
+	internalError
 
 Logs error and sends 500. Use for any error that is an application bug
 or a system error, not a user error.
@@ -33,7 +36,8 @@ func internalError(writer http.ResponseWriter, err error) {
 		http.StatusInternalServerError)
 }
 
-/* renderPage
+/*
+	renderPage
 
 Checks the request path and chooses the template that matches the last part of the request path.
 `pdata` is page data, and the proper type depends on the template being rendered.
@@ -66,11 +70,12 @@ func getLogin(writer http.ResponseWriter, req *http.Request) {
 	renderPage(writer, req, loginData{false, false, ""})
 }
 
-/* parsePages
+/*
+	parsePages
 
 Parses the page query parameter, and returns two ints: the current page, and the next page.
 If an invalid current page is passed as a query parameter, this function returns page 1.
-If the current page is also the last, `next`` will be set to 0.
+If the current page is also the last, `next“ will be set to 0.
 */
 func parsePages(req *http.Request, mailcount int) (int, int) {
 	// FormValue ignores parse errors which is desired behavior in this case
@@ -86,12 +91,13 @@ func parsePages(req *http.Request, mailcount int) (int, int) {
 	return page, page + 1
 }
 
-/* mailsToPage
+/*
+	mailsToPage
 
 Takes an array of mail, a page number, and a next page number, and returns a truncated array.
 */
-func mailsToPage(mails []Mail, page int, next int) []Mail {
-	var pageMails []Mail
+func mailsToPage[T any](mails []T, page int, next int) []T {
+	var pageMails []T
 	if next == 0 {
 		pageMails = mails[(page-1)*mailPerPage:]
 	} else {
@@ -124,7 +130,7 @@ func getMailbox(writer http.ResponseWriter, req *http.Request, session SessionUs
 	} else if req.URL.Path == "/mail/folder/archive/" {
 		mails, err = loadArchive(session.UserId, mailDate.Unix())
 	} else {
-		internalError(writer, errors.New("Unknown folder requested"))
+		internalError(writer, errors.New("unknown folder requested"))
 		return
 	}
 
@@ -149,7 +155,34 @@ func getMailbox(writer http.ResponseWriter, req *http.Request, session SessionUs
 		PagePrev: page - 1, PageNext: next})
 }
 
-/* getConv
+func getDrafts(writer http.ResponseWriter, req *http.Request, session SessionUser) {
+	drafts, err := loadAllDrafts(session.UserId)
+	if err != nil {
+		internalError(writer, err)
+		return
+	}
+
+	page, next := parsePages(req, len(drafts))
+
+	pageMails := mailsToPage(drafts, page, next)
+
+	// truncate the content of mail and construct previews
+	var previews []draftPreview
+
+	for _, d := range pageMails {
+		preview := draftPreview{DraftId: d.DraftId, Recipient: d.Recipient, Subject: d.Subject,
+			Preview: trunc(d.Content, 60)}
+		previews = append(previews, preview)
+	}
+
+	mailDate := currDate()
+
+	renderPage(writer, req, draftsData{Username: session.Username, Date: mailDate.Format("Monday, Jan 2"), Mails: previews,
+		PagePrev: page - 1, PageNext: next})
+}
+
+/*
+	getConv
 
 Parses the request path to get a mail ID. Loads the sender associated with that mail.
 Then renders the conversation page, including all mail with that sender, as well as
@@ -158,7 +191,7 @@ any saved draft to that sender.
 func getConv(writer http.ResponseWriter, req *http.Request, session SessionUser) {
 	mailId := req.PathValue("mailId")
 	if mailId == "" {
-		internalError(writer, errors.New("Could not parse mail id from conversation path"))
+		internalError(writer, errors.New("could not parse mail id from conversation path"))
 		return
 	}
 	sender, err := loadSenderAddr(mailId)

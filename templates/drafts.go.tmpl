@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+{{template "head.go.tmpl" "Drafts"}}
+<body>
+    {{template "nav.go.tmpl" .}}
+    <main>
+        <h1>Drafts</h1>
+
+        <table>
+            <tr>
+                <th class="from-col">Recipient</th>
+                <th class="subject-col">Subject</th>
+                <th class="preview-col">Preview</th>
+            </tr>
+            {{range .Mails}}
+            <tr>
+                <td><a class="cell" href="/mail/conv/{{.DraftId}}/read/">{{.Recipient}}</a></td>
+                <td class="cell">{{.Subject}}</td>
+                <td class="cell">{{.Preview}}</td>
+            </tr>
+            {{end}}
+        </table>
+        {{template "pages.go.tmpl" .}}
+    </main>
+</body>
+</html>

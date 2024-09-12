@@ -8,6 +8,7 @@
 - `/mail/conv/{id}/read/`: Read a conversation
 - `/mail/folder/drafts/`: List and previews of drafts
 - `/mail/compose/`: Compose page
+- `/mail/draft/{id}/edit/`: Work on a draft (same as compose page)
 - `/signup/`: Create a new account
 - `/login/`: Log in (with link to sign up). All routes redirect here if auth fails.
 - `/account/`: View and update account settings
