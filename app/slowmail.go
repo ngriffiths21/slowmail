@@ -42,7 +42,7 @@ func startServer() error {
 	http.HandleFunc("POST /mail/conv/{mailId}/save/{$}", makeAuthedHandler(postComposeSave))
 	http.Handle("GET /{$}", http.RedirectHandler("/mail/folder/inbox", http.StatusSeeOther))
 
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":80", nil)
 	return err
 }
 
