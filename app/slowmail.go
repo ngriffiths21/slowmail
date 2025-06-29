@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -25,6 +26,9 @@ var temps *template.Template
 // host name for email addresses
 var host string
 
+// port
+var port int
+
 func startServer() error {
 	http.HandleFunc("GET /signup/{$}", getSignup)
 	http.HandleFunc("POST /signup/{$}", postSignup)
@@ -42,7 +46,7 @@ func startServer() error {
 	http.HandleFunc("POST /mail/conv/{mailId}/save/{$}", makeAuthedHandler(postComposeSave))
 	http.Handle("GET /{$}", http.RedirectHandler("/mail/folder/inbox", http.StatusSeeOther))
 
-	err := http.ListenAndServe(":80", nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	return err
 }
 
@@ -50,8 +54,9 @@ func appInit() {
 	var dbPath string
 	flag.StringVar(&dbPath, "db", "", "Path to the database (required)")
 	flag.StringVar(&host, "host", "", "Host name for email addresses (required)")
+	flag.IntVar(&port, "port", 0, "Port to listen on (required)")
 	flag.Parse()
-	if dbPath == "" || host == "" {
+	if dbPath == "" || host == "" || port == 0 {
 		log.Println("Error: please provide all required flags.")
 		flag.Usage()
 		os.Exit(1)
