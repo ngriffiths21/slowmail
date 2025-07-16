@@ -78,8 +78,12 @@ func appInit() {
 
 func main() {
 	appInit()
+	err := dbInit()
+	if err != nil {
+		log.Panic(err)
+	}
 	defer db.Close()
-	err := startServer()
+	err = startServer()
 	if err != nil {
 		log.Panic(err)
 	}
